@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FullSpeed Automotive — Store Service Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root {
+  --red:        #C8102E;
+  --red-light:  #F5E7EA;
+  --red-mid:    #E8193A;
+  --red-pale:   #FDF2F4;
+  --black:      #111827;
+  --charcoal:   #1F2937;
+  --text-primary:   #111827;
+  --text-secondary: #4B5563;
+  --text-muted:     #9CA3AF;
+  --border:     #E5E7EB;
+  --border-mid: #D1D5DB;
+  --bg:         #F9FAFB;
+  --bg-white:   #FFFFFF;
+  --surface:    #F3F4F6;
+  --card:       #FFFFFF;
+  --green:      #059669;
+  --green-bg:   #ECFDF5;
+  --amber:      #D97706;
+  --amber-bg:   #FFFBEB;
+  --blue:       #2563EB;
+  --font-main:  'DM Sans', sans-serif;
+  --font-body:  'Inter', sans-serif;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+  --radius:     8px;
+  --radius-sm:  5px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+.header {
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-logo-mark {
+  width: 38px;
+  height: 38px;
+  background: var(--red);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.header-logo-mark svg { width: 22px; height: 22px; }
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+.header-text {}
+.header-title {
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.header-title span { color: var(--red); }
+.header-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-top: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-pill {
+  background: var(--red-pale);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--red-light);
+  font-family: var(--font-main);
+}
+
+.header-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.header-date strong { color: var(--text-secondary); font-weight: 600; }
+
+/* ── FILTERS ────────────────────────────────────────────── */
+.filters-bar {
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 68px;
+  z-index: 999;
+}
+
+.filter-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+.filter-eyebrow svg { color: var(--red); }
+
+.active-count {
+  background: var(--red);
+  color: white;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+.active-count.show { display: flex; }
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.filter-select {
+  background: var(--bg-white);
+  border: 1px solid var(--border-mid);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 28px 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 150px;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(200,16,46,0.08);
+}
+.filter-select:hover { border-color: var(--text-muted); }
+
+.filter-sep { width: 1px; height: 20px; background: var(--border); }
+
+.btn-reset {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border-mid);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-reset:hover { border-color: var(--red); color: var(--red); background: var(--red-pale); }
+
+/* ── MAIN ───────────────────────────────────────────────── */
+.main {
+  padding: 28px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── SECTION HEADER ─────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-header-left {}
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.section-title {
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.section-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 400;
+}
+
+/* ── SUMMARY STRIP ──────────────────────────────────────── */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.summary-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+.summary-icon.red   { background: var(--red-pale);  }
+.summary-icon.gray  { background: var(--surface);   }
+.summary-icon.green { background: var(--green-bg);  }
+.summary-icon.amber { background: var(--amber-bg);  }
+
+.summary-body {}
+.summary-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.summary-value {
+  font-family: var(--font-main);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.summary-value.accent { color: var(--red); }
+.summary-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── KPI SECTION ────────────────────────────────────────── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-white);
+}
+
+.panel-body { padding: 20px 24px; }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.kpi-tile {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg-white);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-tile::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cat-color, var(--border));
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.kpi-tile:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--cat-color, var(--border));
+}
+.kpi-tile:hover::after { opacity: 1; }
+
+.kpi-cat {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+.kpi-pct-row {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.kpi-pct {
+  font-family: var(--font-main);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.kpi-pct-sym {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kpi-track {
+  height: 4px;
+  background: var(--surface);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.kpi-fill {
+  height: 100%;
+  background: var(--cat-color, var(--red));
+  border-radius: 2px;
+  transition: width 0.7s cubic-bezier(.16,1,.3,1);
+}
+
+.kpi-stores {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── MAP SECTION ────────────────────────────────────────── */
+.map-controls-row {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+}
+
+.map-control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.toggle-group {
+  display: flex;
+  background: var(--bg-white);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.toggle-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-mid);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.toggle-btn:last-child { border-right: none; }
+.toggle-btn:hover { background: var(--surface); color: var(--text-primary); }
+.toggle-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+.svc-filter-row {
+  display: none;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--red-pale);
+}
+.svc-filter-row.show { display: flex; }
+
+.svc-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.svc-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.svc-chip {
+  background: var(--bg-white);
+  border: 1px solid var(--border-mid);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.svc-chip:hover { border-color: var(--text-muted); color: var(--text-primary); }
+.svc-chip.active { color: white; border-color: transparent; }
+
+#map {
+  height: 500px;
+  width: 100%;
+}
+
+.map-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-white);
+}
+
+.map-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.map-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.map-count span { color: var(--red); }
+
+/* ── LEAFLET OVERRIDES ──────────────────────────────────── */
+.leaflet-container { background: #EEF2F7; font-family: var(--font-body); }
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--border) !important;
+  font-family: var(--font-body) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.leaflet-popup-content { margin: 0 !important; }
+.leaflet-popup-tip-container { margin-top: -1px; }
+.popup-inner { padding: 14px 16px; }
+.popup-store { font-family: var(--font-main); font-weight: 700; font-size: 14px; color: var(--text-primary); margin-bottom: 2px; letter-spacing: -0.01em; }
+.popup-brand-line { font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+.popup-addr { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-bottom: 8px; }
+.popup-dma { font-size: 11px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border); }
+.popup-dma strong { color: var(--text-secondary); }
+.popup-cats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.popup-cat {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  font-family: var(--font-main); letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+/* ── NO RESULTS ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  display: none;
+}
+.empty-state.show { display: block; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-family: var(--font-main); font-size: 17px; font-weight: 700; color: var(--text-muted); }
+.empty-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 40px;
+  background: var(--bg-white);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.footer-brand {
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.footer-brand span { color: var(--red); }
+.footer-meta { font-size: 11px; color: var(--text-muted); }
+
+/* ── ANIMATIONS ─────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-tile {
+  animation: fadeUp 0.35s ease both;
+}
+.kpi-tile:nth-child(1) { animation-delay: 0.03s; }
+.kpi-tile:nth-child(2) { animation-delay: 0.06s; }
+.kpi-tile:nth-child(3) { animation-delay: 0.09s; }
+.kpi-tile:nth-child(4) { animation-delay: 0.12s; }
+.kpi-tile:nth-child(5) { animation-delay: 0.15s; }
+.kpi-tile:nth-child(6) { animation-delay: 0.18s; }
+.kpi-tile:nth-child(7) { animation-delay: 0.21s; }
+.kpi-tile:nth-child(8) { animation-delay: 0.24s; }
+.kpi-tile:nth-child(9) { animation-delay: 0.27s; }
+.kpi-tile:nth-child(10) { animation-delay: 0.30s; }
+.kpi-tile:nth-child(11) { animation-delay: 0.33s; }
+.kpi-tile:nth-child(12) { animation-delay: 0.36s; }
+.kpi-tile:nth-child(13) { animation-delay: 0.39s; }
+.kpi-tile:nth-child(14) { animation-delay: 0.42s; }
+.kpi-tile:nth-child(15) { animation-delay: 0.45s; }
+
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 900px) {
+  .summary-strip { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .main { padding: 20px; }
+  .header, .filters-bar { padding-left: 20px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo-mark">
+      <!-- Speed/service icon -->
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="white"/>
+      </svg>
+    </div>
+    <div class="header-divider"></div>
+    <div class="header-text">
+      <div class="header-title"><span>FullSpeed</span> Automotive</div>
+      <div class="header-subtitle">Store Service Intelligence &nbsp;·&nbsp; Marketing Performance & Insights</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="header-date">Data window: <strong>Last 3 Months</strong></span>
+    <div class="header-pill" id="headerPill">285 Active Stores</div>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters-bar">
+  <div class="filter-eyebrow">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M1.5 2.5h10M4 6.5h5M6 10.5h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    Filter
+    <span class="active-count" id="activeCount">0</span>
+  </div>
+
+  <div class="filter-group">
+    <span class="filter-group-label">Brand</span>
+    <select class="filter-select" id="filterBrand">
+      <option value="">All Brands</option>
+    </select>
+  </div>
+
+  <div class="filter-sep"></div>
+
+  <div class="filter-group">
+    <span class="filter-group-label">State</span>
+    <select class="filter-select" id="filterState" style="min-width:110px">
+      <option value="">All States</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <span class="filter-group-label">DMA</span>
+    <select class="filter-select" id="filterDMA" style="min-width:200px">
+      <option value="">All DMAs</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <span class="filter-group-label">City</span>
+    <select class="filter-select" id="filterCity" style="min-width:160px">
+      <option value="">All Cities</option>
+    </select>
+  </div>
+
+  <button class="btn-reset" id="btnReset">
+    <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Reset
+  </button>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- SUMMARY STRIP -->
+  <div class="summary-strip">
+    <div class="summary-card">
+      <div class="summary-icon red">🏪</div>
+      <div class="summary-body">
+        <div class="summary-label">Stores in View</div>
+        <div class="summary-value accent" id="sumStores">285</div>
+        <div class="summary-meta" id="sumStoresMeta">of 285 total locations</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon gray">📡</div>
+      <div class="summary-body">
+        <div class="summary-label">DMAs Covered</div>
+        <div class="summary-value" id="sumDMAs">50</div>
+        <div class="summary-meta">designated market areas</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon green">🗺️</div>
+      <div class="summary-body">
+        <div class="summary-label">States Active</div>
+        <div class="summary-value" id="sumStates">24</div>
+        <div class="summary-meta">across the U.S.</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon amber">🏷️</div>
+      <div class="summary-body">
+        <div class="summary-label">Brands</div>
+        <div class="summary-value" id="sumBrands">8</div>
+        <div class="summary-meta">franchise & corporate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI MODULE -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="section-label">Service Penetration</div>
+      <div class="section-title">Category Offering Rate by Store</div>
+      <div class="section-desc">Percentage of filtered stores with recorded transactions in each service category — last 3 months</div>
+    </div>
+    <div class="panel-body">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="empty-state" id="kpiEmpty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">No stores match the active filters</div>
+        <div class="empty-sub">Try adjusting or resetting your filter selections</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP MODULE -->
+  <div class="panel">
+    <div class="panel-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <div class="section-label">Store Map</div>
+          <div class="section-title">Geographic Distribution</div>
+          <div class="section-desc">Filtered locations · Click any pin for store details</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="map-control-label">Color by</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="tBrand" onclick="setMode('brand')">Brand</button>
+            <button class="toggle-btn" id="tDMA" onclick="setMode('dma')">DMA</button>
+            <button class="toggle-btn" id="tService" onclick="setMode('service')">Service</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="svc-filter-row" id="svcRow">
+      <span class="svc-filter-label">Highlight stores offering:</span>
+      <div class="svc-chips" id="svcChips"></div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="map-footer">
+      <div class="map-legend" id="mapLegend"></div>
+      <div class="map-count">Showing <span id="mapCount">285</span> locations</div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-brand"><span>FullSpeed</span> Automotive &nbsp;·&nbsp; Store Service Intelligence</div>
+  <div class="footer-meta">Marketing Performance & Insights &nbsp;·&nbsp; Confidential Internal Use Only</div>
+</footer>
+
+<!-- Leaflet loaded at end of body to ensure DOM is ready -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const RAW = {"stores":[{"store_number":"1","store_name":"Grease Monkey (ADI) #1","brand":"Grease Monkey (ADI)","address":"8885 N. Washington St.","city":"Thornton","state":"CO","zip":"80229","lat":39.858704,"lon":-104.978372,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":5,"Battery":2,"Differentials":10,"Engine":1,"Fluids & Cooling":6,"Fuel System":12,"Lighting":6,"Shop & Misc":21,"Tires":1,"Transmission":9,"Wiper Blades":6}},{"store_number":"1011","store_name":"Grease Monkey #1011","brand":"Grease Monkey","address":"2525 Roswell Road","city":"Marietta","state":"GA","zip":"30062","lat":33.974725,"lon":-84.478532,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":6,"Battery":12,"Brakes":87,"Differentials":3,"Emissions & Inspections":152,"Engine":16,"Fluids & Cooling":19,"Fuel System":1,"Lighting":13,"Shop & Misc":86,"Suspension & Steering":6,"Tires":2,"Transmission":6,"Wiper Blades":16}},{"store_number":"1012","store_name":"Grease Monkey #1012","brand":"Grease Monkey","address":"4390 Roswell Road","city":"Atlanta","state":"GA","zip":"30294","lat":33.8748,"lon":-84.380993,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":7,"Battery":7,"Brakes":55,"Differentials":4,"Emissions & Inspections":1043,"Fluids & Cooling":16,"Fuel System":10,"Lighting":22,"Shop & Misc":57,"Tires":4,"Transmission":2,"Wiper Blades":42}},{"store_number":"1013","store_name":"Grease Monkey #1013","brand":"Grease Monkey","address":"1953 Howell Mill Road NW","city":"Atlanta","state":"GA","zip":"30318","lat":33.808046,"lon":-84.412325,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":23,"Battery":18,"Brakes":41,"Differentials":3,"Emissions & Inspections":426,"Engine":4,"Fluids & Cooling":50,"Fuel System":7,"Lighting":21,"Shop & Misc":67,"Tires":1,"Transmission":9,"Wiper Blades":32}},{"store_number":"1015","store_name":"Grease Monkey #1015","brand":"Grease Monkey","address":"9694 Hwy 92","city":"Woodstock","state":"GA","zip":"30188","lat":34.085992,"lon":-84.527306,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":15,"Battery":5,"Brakes":52,"Emissions & Inspections":35,"Engine":6,"Fluids & Cooling":4,"Lighting":11,"Shop & Misc":62,"Tires":3,"Transmission":4,"Wiper Blades":19}},{"store_number":"1017","store_name":"Grease Monkey #1017","brand":"Grease Monkey","address":"2065 Mt Zion Road","city":"Morrow","state":"GA","zip":"30260","lat":33.561361,"lon":-84.323187,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":23,"Battery":3,"Brakes":10,"Emissions & Inspections":165,"Engine":1,"Fluids & Cooling":9,"Fuel System":7,"Lighting":23,"Shop & Misc":19,"Transmission":6,"Wiper Blades":24}},{"store_number":"1018","store_name":"Grease Monkey #1018","brand":"Grease Monkey","address":"605 Hwy 138 West","city":"Stockbridge","state":"GA","zip":"30281","lat":33.54865,"lon":-84.275449,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":3,"Battery":1,"Brakes":9,"Differentials":3,"Emissions & Inspections":90,"Engine":4,"Fluids & Cooling":24,"Fuel System":6,"Lighting":13,"Shop & Misc":18,"Tires":3,"Transmission":2,"Wiper Blades":11}},{"store_number":"1019","store_name":"Grease Monkey #1019","brand":"Grease Monkey","address":"5528 Chamblee Dunwoody Rd","city":"Dunwoody","state":"GA","zip":"30338","lat":33.949237,"lon":-84.336577,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":12,"Battery":4,"Brakes":16,"Emissions & Inspections":597,"Engine":1,"Fluids & Cooling":2,"Lighting":29,"Shop & Misc":26,"Tires":2,"Transmission":2,"Wiper Blades":29}},{"store_number":"1020","store_name":"Grease Monkey #1020","brand":"Grease Monkey","address":"2755 Sandy Plains Road","city":"Marietta","state":"GA","zip":"30066","lat":34.017219,"lon":-84.492525,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":7,"Air Filters":11,"Battery":15,"Brakes":134,"Differentials":2,"Emissions & Inspections":130,"Engine":64,"Fluids & Cooling":39,"Fuel System":26,"Lighting":20,"Shop & Misc":146,"Suspension & Steering":7,"Tires":7,"Transmission":12,"Wiper Blades":14}},{"store_number":"1023","store_name":"Grease Monkey #1023","brand":"Grease Monkey","address":"4323 Bells Ferry Road","city":"Kennesaw","state":"GA","zip":"30144","lat":34.056594,"lon":-84.557745,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":9,"Battery":6,"Brakes":54,"Differentials":2,"Emissions & Inspections":65,"Engine":14,"Fluids & Cooling":3,"Fuel System":2,"Lighting":15,"Shop & Misc":51,"Transmission":17,"Wiper Blades":9}},{"store_number":"1024","store_name":"Grease Monkey #1024","brand":"Grease Monkey","address":"4410 Hugh Howell Road","city":"Tucker","state":"GA","zip":"30084","lat":33.852157,"lon":-84.207632,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":17,"Battery":6,"Brakes":30,"Differentials":2,"Emissions & Inspections":220,"Engine":10,"Fluids & Cooling":16,"Fuel System":10,"Lighting":19,"Shop & Misc":43,"Tires":1,"Transmission":17,"Wiper Blades":26}},{"store_number":"1025","store_name":"Grease Monkey #1025","brand":"Grease Monkey","address":"6271 Highway 92","city":"Acworth","state":"GA","zip":"30102","lat":34.089407,"lon":-84.584318,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":9,"Battery":11,"Brakes":22,"Differentials":9,"Emissions & Inspections":306,"Engine":9,"Fluids & Cooling":19,"Fuel System":14,"Lighting":20,"Shop & Misc":53,"Tires":2,"Transmission":2,"Wiper Blades":34}},{"store_number":"1026","store_name":"Grease Monkey #1026","brand":"Grease Monkey","address":"910 Herrington Road","city":"Lawrenceville","state":"GA","zip":"30044","lat":33.945685,"lon":-84.082215,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":92,"Battery":1,"Brakes":27,"Differentials":2,"Emissions & Inspections":264,"Engine":11,"Fluids & Cooling":4,"Lighting":18,"Shop & Misc":44,"Suspension & Steering":1,"Tires":2,"Transmission":9,"Wiper Blades":110}},{"store_number":"1027","store_name":"Grease Monkey #1027","brand":"Grease Monkey","address":"1490 Towne Lake Parkway","city":"Woodstock","state":"GA","zip":"30189","lat":34.105604,"lon":-84.543278,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":25,"Battery":5,"Brakes":26,"Differentials":5,"Emissions & Inspections":208,"Engine":13,"Fluids & Cooling":2,"Fuel System":12,"Lighting":18,"Shop & Misc":46,"Suspension & Steering":1,"Tires":1,"Wiper Blades":17}},{"store_number":"1028","store_name":"Grease Monkey #1028","brand":"Grease Monkey","address":"1740 Indian Trail  Ste 200","city":"Norcross","state":"GA","zip":"30093","lat":33.871348,"lon":-84.196695,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":15,"Battery":5,"Brakes":16,"Differentials":6,"Emissions & Inspections":328,"Engine":2,"Fluids & Cooling":14,"Fuel System":1,"Lighting":9,"Shop & Misc":41,"Tires":3,"Transmission":14,"Wiper Blades":16}},{"store_number":"1029","store_name":"Grease Monkey #1029","brand":"Grease Monkey","address":"566 Ponce De Leon Ave  #100","city":"Atlanta","state":"GA","zip":"30308","lat":33.773811,"lon":-84.36868,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":30,"Battery":25,"Brakes":29,"Differentials":9,"Emissions & Inspections":1185,"Engine":2,"Fluids & Cooling":101,"Fuel System":24,"Lighting":186,"Shop & Misc":116,"Tires":24,"Transmission":29,"Wiper Blades":140}},{"store_number":"1030","store_name":"Grease Monkey #1030","brand":"Grease Monkey","address":"3868 Austell Road","city":"Marietta","state":"GA","zip":"30008","lat":33.859371,"lon":-84.599918,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":10,"Battery":2,"Brakes":10,"Emissions & Inspections":45,"Engine":9,"Fluids & Cooling":3,"Fuel System":2,"Lighting":2,"Shop & Misc":26,"Transmission":2,"Wiper Blades":12}},{"store_number":"1032","store_name":"Grease Monkey #1032","brand":"Grease Monkey","address":"2350 Satellite Blvd","city":"Duluth","state":"GA","zip":"30097","lat":33.976561,"lon":-84.093794,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":4,"Battery":8,"Brakes":12,"Differentials":4,"Emissions & Inspections":278,"Engine":1,"Fluids & Cooling":4,"Fuel System":2,"Lighting":19,"Shop & Misc":29,"Transmission":8,"Wiper Blades":12}},{"store_number":"1034","store_name":"Grease Monkey #1034","brand":"Grease Monkey","address":"6280 Fairburn Road","city":"Douglasville","state":"GA","zip":"30135","lat":33.693309,"lon":-84.631151,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":17,"Battery":3,"Brakes":30,"Differentials":4,"Emissions & Inspections":400,"Engine":11,"Fluids & Cooling":16,"Fuel System":9,"Lighting":12,"Shop & Misc":60,"Suspension & Steering":4,"Tires":3,"Transmission":4,"Wiper Blades":30}},{"store_number":"1035","store_name":"Grease Monkey #1035","brand":"Grease Monkey","address":"2671 South Cobb Drive","city":"Smyrna","state":"GA","zip":"30080","lat":33.88827,"lon":-84.535335,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":4,"Air Filters":16,"Battery":22,"Brakes":75,"Differentials":4,"Emissions & Inspections":501,"Engine":21,"Fluids & Cooling":22,"Fuel System":8,"Lighting":45,"Shop & Misc":143,"Tires":88,"Transmission":16,"Wiper Blades":27}},{"store_number":"1036","store_name":"Grease Monkey #1036","brand":"Grease Monkey","address":"650 Riverstone Pkwy","city":"Canton","state":"GA","zip":"30114","lat":34.245386,"lon":-84.482294,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":8,"Battery":2,"Brakes":26,"Differentials":2,"Emissions & Inspections":167,"Fluids & Cooling":7,"Lighting":1,"Shop & Misc":17,"Transmission":2,"Wiper Blades":8}},{"store_number":"1037","store_name":"Grease Monkey #1037","brand":"Grease Monkey","address":"3000-B Centerville Hwy","city":"Snellville","state":"GA","zip":"30078","lat":33.827657,"lon":-84.030867,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":4,"Battery":2,"Brakes":31,"Emissions & Inspections":428,"Engine":4,"Fluids & Cooling":18,"Fuel System":9,"Lighting":31,"Shop & Misc":61,"Tires":1,"Transmission":13,"Wiper Blades":19}},{"store_number":"1039","store_name":"Grease Monkey #1039","brand":"Grease Monkey","address":"358 Grayson Hwy","city":"Lawrenceville","state":"GA","zip":"30045","lat":33.942643,"lon":-83.983212,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":16,"Battery":3,"Brakes":31,"Differentials":4,"Emissions & Inspections":150,"Engine":2,"Fluids & Cooling":8,"Fuel System":5,"Lighting":28,"Shop & Misc":37,"Tires":3,"Transmission":4,"Wiper Blades":22}},{"store_number":"1040","store_name":"Grease Monkey #1040","brand":"Grease Monkey","address":"6163 Jonesboro Road","city":"Morrow","state":"GA","zip":"30260","lat":33.586722,"lon":-84.339325,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":7,"Battery":5,"Brakes":21,"Emissions & Inspections":427,"Engine":15,"Fluids & Cooling":4,"Fuel System":1,"Lighting":10,"Shop & Misc":42,"Tires":4,"Wiper Blades":18}},{"store_number":"1041","store_name":"Grease Monkey #1041","brand":"Grease Monkey","address":"524 Atlanta Road","city":"Cumming","state":"GA","zip":"30040","lat":34.19606,"lon":-84.135414,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":8,"Battery":1,"Brakes":20,"Emissions & Inspections":240,"Engine":5,"Fluids & Cooling":8,"Fuel System":4,"Lighting":14,"Shop & Misc":37,"Tires":3,"Transmission":10,"Wiper Blades":12}},{"store_number":"1042","store_name":"Grease Monkey #1042","brand":"Grease Monkey","address":"4205 Pleasant Hill Road","city":"Duluth","state":"GA","zip":"30096","lat":34.004576,"lon":-84.170408,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":38,"Battery":12,"Brakes":9,"Differentials":4,"Emissions & Inspections":312,"Engine":9,"Fluids & Cooling":11,"Fuel System":3,"Lighting":18,"Shop & Misc":45,"Tires":2,"Transmission":6,"Wiper Blades":47}},{"store_number":"1043","store_name":"Grease Monkey #1043","brand":"Grease Monkey","address":"850 Oak Road","city":"Lawrenceville","state":"GA","zip":"30044","lat":33.88834,"lon":-84.06066,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":6,"Battery":12,"Brakes":21,"Differentials":2,"Emissions & Inspections":446,"Engine":16,"Fluids & Cooling":23,"Fuel System":13,"Lighting":33,"Shop & Misc":92,"Tires":10,"Transmission":10,"Wiper Blades":34}},{"store_number":"1044","store_name":"Grease Monkey #1044","brand":"Grease Monkey","address":"3633 Peachtree Parkway","city":"Suwanee","state":"GA","zip":"30024","lat":34.071105,"lon":-84.166376,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":18,"Battery":13,"Brakes":29,"Differentials":5,"Emissions & Inspections":455,"Engine":1,"Fluids & Cooling":22,"Fuel System":4,"Lighting":23,"Shop & Misc":45,"Tires":4,"Transmission":16,"Wiper Blades":35}},{"store_number":"1045","store_name":"Grease Monkey #1045","brand":"Grease Monkey","address":"1340 Lawrenceville-Suwanee Road","city":"Lawrenceville","state":"GA","zip":"30043","lat":33.98372,"lon":-84.022832,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":14,"Battery":6,"Brakes":83,"Emissions & Inspections":283,"Engine":9,"Fluids & Cooling":15,"Fuel System":8,"Lighting":13,"Shop & Misc":84,"Tires":3,"Transmission":12,"Wiper Blades":22}},{"store_number":"1046","store_name":"Grease Monkey #1046","brand":"Grease Monkey","address":"1014 Whitlock Avenue","city":"Marietta","state":"GA","zip":"30064","lat":33.951667,"lon":-84.58269,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":127,"Battery":6,"Brakes":30,"Differentials":4,"Emissions & Inspections":727,"Engine":11,"Fluids & Cooling":7,"Fuel System":4,"Lighting":12,"Shop & Misc":61,"Tires":2,"Transmission":6,"Wiper Blades":54}},{"store_number":"1070","store_name":"Grease Monkey #1070","brand":"Grease Monkey","address":"42 Highway 81 West  Suite B","city":"McDonough","state":"GA","zip":"30253","lat":33.426434,"lon":-84.183213,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":10,"Brakes":6,"Emissions & Inspections":452,"Engine":4,"Fluids & Cooling":2,"Lighting":16,"Shop & Misc":21,"Tires":10,"Transmission":2,"Wiper Blades":53}},{"store_number":"1071","store_name":"Grease Monkey #1071","brand":"Grease Monkey","address":"15 Bailey Station Drive","city":"Sharpsburg","state":"GA","zip":"30277","lat":33.408103,"lon":-84.675275,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":9,"Battery":2,"Differentials":2,"Emissions & Inspections":614,"Engine":5,"Fluids & Cooling":4,"Fuel System":3,"Lighting":48,"Shop & Misc":11,"Tires":2,"Transmission":2,"Wiper Blades":43}},{"store_number":"1072","store_name":"SpeeDee Oil and Auto #1072","brand":"SpeeDee","address":"5279 US-78","city":"Stone Mountain","state":"GA","zip":"30087","lat":33.823269,"lon":-84.11345,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":4,"Air Filters":8,"Battery":1,"Brakes":31,"Emissions & Inspections":58,"Engine":9,"Fluids & Cooling":12,"Fuel System":12,"Lighting":13,"Shop & Misc":91,"Tires":5,"Transmission":4,"Wiper Blades":8}},{"store_number":"1074","store_name":"Grease Monkey #1074","brand":"Grease Monkey","address":"2110 US 1 South","city":"St. Augustine","state":"FL","zip":"32086","lat":29.860324,"lon":-81.32255,"dma_code":"561","dma_name":"Jacksonville","categories":{"Air Conditioning":4,"Air Filters":3,"Battery":20,"Brakes":66,"Differentials":4,"Emissions & Inspections":45,"Engine":25,"Fluids & Cooling":37,"Fuel System":7,"Lighting":13,"Shop & Misc":151,"Suspension & Steering":5,"Tires":6,"Transmission":9,"Wiper Blades":20}},{"store_number":"1075","store_name":"Grease Monkey #1075","brand":"Grease Monkey","address":"651 S. Ponce de Leon Blvd","city":"St. Augustine","state":"FL","zip":"32086","lat":29.882935,"lon":-81.324752,"dma_code":"561","dma_name":"Jacksonville","categories":{"Air Conditioning":2,"Air Filters":9,"Battery":5,"Brakes":51,"Differentials":13,"Emissions & Inspections":1,"Engine":7,"Fluids & Cooling":26,"Fuel System":21,"Lighting":3,"Shop & Misc":72,"Transmission":13,"Wiper Blades":11}},{"store_number":"1076","store_name":"Grease Monkey #1076","brand":"Grease Monkey","address":"2500 State Rd 16","city":"St. Augustine","state":"FL","zip":"32092","lat":29.919092,"lon":-81.414282,"dma_code":"561","dma_name":"Jacksonville","categories":{"Air Conditioning":2,"Air Filters":6,"Battery":15,"Brakes":31,"Emissions & Inspections":1,"Engine":16,"Fuel System":3,"Lighting":5,"Shop & Misc":57,"Suspension & Steering":1,"Tires":2,"Transmission":5,"Wiper Blades":3}},{"store_number":"1128","store_name":"Grease Monkey #1128","brand":"Grease Monkey","address":"14310 Huntington Ave","city":"Savage","state":"MN","zip":"55378","lat":44.745734,"lon":-93.330821,"dma_code":"613","dma_name":"Minneapolis-St. Paul","categories":{"Air Filters":2,"Battery":8,"Brakes":10,"Differentials":2,"Emissions & Inspections":1,"Engine":3,"Fluids & Cooling":4,"Fuel System":2,"Lighting":12,"Shop & Misc":52,"Tires":8,"Wiper Blades":10}},{"store_number":"1132","store_name":"Grease Monkey #1132","brand":"Grease Monkey","address":"8824 Aztec Drive","city":"Eden Prairie","state":"MN","zip":"55347","lat":44.843705,"lon":-93.439181,"dma_code":"613","dma_name":"Minneapolis-St. Paul","categories":{"Air Filters":17,"Battery":18,"Brakes":14,"Differentials":2,"Engine":1,"Fluids & Cooling":5,"Fuel System":1,"Lighting":34,"Shop & Misc":50,"Tires":10,"Transmission":8,"Wiper Blades":47}},{"store_number":"1186","store_name":"Grease Monkey #1186","brand":"Grease Monkey","address":"2205 W Parkwood Ave","city":"Friendswood","state":"TX","zip":"77546","lat":29.483777,"lon":-95.217509,"dma_code":"618","dma_name":"Houston","categories":{"Air Conditioning":9,"Air Filters":16,"Battery":16,"Brakes":76,"Differentials":4,"Emissions & Inspections":480,"Engine":10,"Fluids & Cooling":37,"Fuel System":13,"Lighting":31,"Shop & Misc":86,"Suspension & Steering":6,"Tires":7,"Transmission":3,"Wiper Blades":88}},{"store_number":"1324","store_name":"Grease Monkey (ADI) #1324","brand":"Grease Monkey (ADI)","address":"11988 W. Jewell Avenue","city":"Lakewood","state":"CO","zip":"80228","lat":39.681764,"lon":-105.129111,"dma_code":"751","dma_name":"Denver","categories":{"Air Conditioning":1,"Air Filters":7,"Battery":7,"Brakes":48,"Differentials":10,"Emissions & Inspections":12,"Engine":69,"Fluids & Cooling":30,"Fuel System":13,"Lighting":21,"Shop & Misc":107,"Suspension & Steering":7,"Tires":23,"Transmission":13,"Wiper Blades":21}},{"store_number":"141","store_name":"Grease Monkey #141","brand":"Grease Monkey","address":"1821 N Division St","city":"Morris","state":"IL","zip":"60450","lat":41.377809,"lon":-88.421853,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":5,"Battery":6,"Brakes":33,"Emissions & Inspections":10,"Engine":13,"Fluids & Cooling":12,"Fuel System":7,"Lighting":13,"Shop & Misc":76,"Tires":68,"Transmission":2,"Wiper Blades":8}},{"store_number":"142","store_name":"Grease Monkey #142","brand":"Grease Monkey","address":"2280 Ten Ten Rd","city":"Apex","state":"NC","zip":"27539","lat":35.718509,"lon":-78.815939,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Battery":1,"Emissions & Inspections":85,"Fluids & Cooling":2,"Shop & Misc":2,"Wiper Blades":11}},{"store_number":"143","store_name":"Grease Monkey #143","brand":"Grease Monkey","address":"2992 Kildaire Farm Rd","city":"Cary","state":"NC","zip":"27518","lat":35.717245,"lon":-78.789287,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Air Filters":1,"Battery":1,"Brakes":6,"Emissions & Inspections":131,"Lighting":4,"Shop & Misc":12,"Tires":3,"Transmission":2,"Wiper Blades":9}},{"store_number":"144","store_name":"Grease Monkey #144","brand":"Grease Monkey","address":"40 Technology Dr","city":"Garner","state":"NC","zip":"27529","lat":35.606075,"lon":-78.568889,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Air Filters":5,"Brakes":4,"Differentials":2,"Emissions & Inspections":2107,"Engine":2,"Fluids & Cooling":1,"Fuel System":2,"Lighting":38,"Shop & Misc":27,"Tires":10,"Wiper Blades":250}},{"store_number":"145","store_name":"Grease Monkey #145","brand":"Grease Monkey","address":"1110 North Main St","city":"Fuquay-Varina","state":"NC","zip":"27526","lat":35.591322,"lon":-78.784125,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Brakes":2,"Emissions & Inspections":171,"Lighting":10,"Shop & Misc":2,"Wiper Blades":20}},{"store_number":"146","store_name":"Grease Monkey #146","brand":"Grease Monkey","address":"928 North Main St","city":"Holly Springs","state":"NC","zip":"27540","lat":35.664105,"lon":-78.835176,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Air Conditioning":8,"Air Filters":4,"Battery":9,"Brakes":33,"Differentials":2,"Emissions & Inspections":2539,"Engine":2,"Fluids & Cooling":15,"Fuel System":3,"Lighting":47,"Shop & Misc":78,"Suspension & Steering":1,"Tires":35,"Transmission":8,"Wiper Blades":84}},{"store_number":"147","store_name":"Grease Monkey #147","brand":"Grease Monkey","address":"9636 Chapel Hill Rd","city":"Morrisville","state":"NC","zip":"27560","lat":35.808672,"lon":-78.813373,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Air Filters":1,"Brakes":4,"Emissions & Inspections":96,"Shop & Misc":2,"Wiper Blades":16}},{"store_number":"1502","store_name":"Grease Monkey #1502","brand":"Grease Monkey","address":"785 Lanier Ave E","city":"Fayetteville","state":"GA","zip":"30214","lat":33.45043,"lon":-84.434586,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":6,"Battery":3,"Brakes":5,"Emissions & Inspections":133,"Engine":12,"Fluids & Cooling":17,"Lighting":10,"Shop & Misc":39,"Suspension & Steering":1,"Tires":1,"Wiper Blades":8}},{"store_number":"1504","store_name":"Grease Monkey #1504","brand":"Grease Monkey","address":"1000 9th St., Goldsboro","city":"Goldsboro","state":"NC","zip":"27534","lat":35.395108,"lon":-77.972708,"dma_code":"560","dma_name":"Raleigh-Durham (Fayetvlle)","categories":{"Air Filters":8,"Battery":16,"Brakes":47,"Differentials":11,"Emissions & Inspections":2400,"Fluids & Cooling":38,"Fuel System":5,"Lighting":55,"Shop & Misc":136,"Tires":18,"Transmission":32,"Wiper Blades":219}},{"store_number":"156","store_name":"Grease Monkey #156","brand":"Grease Monkey","address":"9492 S. Highland Drive","city":"Sandy","state":"UT","zip":"84092","lat":40.578645,"lon":-111.836068,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":11,"Battery":25,"Brakes":93,"Differentials":8,"Emissions & Inspections":2066,"Engine":5,"Fluids & Cooling":64,"Fuel System":2,"Lighting":19,"Shop & Misc":95,"Tires":13,"Transmission":12,"Wiper Blades":24}},{"store_number":"159","store_name":"Grease Monkey #159","brand":"Grease Monkey","address":"5409 East State Street","city":"Rockford","state":"IL","zip":"61108","lat":42.264292,"lon":-89.012123,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":20,"Battery":9,"Brakes":63,"Differentials":2,"Emissions & Inspections":4,"Engine":8,"Fluids & Cooling":16,"Fuel System":3,"Lighting":38,"Shop & Misc":115,"Suspension & Steering":6,"Tires":10,"Transmission":12,"Wiper Blades":19}},{"store_number":"167","store_name":"Grease Monkey #167","brand":"Grease Monkey","address":"11611 Main Street","city":"Roscoe","state":"IL","zip":"61073","lat":42.429589,"lon":-89.014564,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":1,"Battery":4,"Differentials":8,"Emissions & Inspections":16,"Engine":2,"Fluids & Cooling":8,"Fuel System":1,"Lighting":16,"Shop & Misc":24,"Transmission":12,"Wiper Blades":11}},{"store_number":"172","store_name":"Grease Monkey #172","brand":"Grease Monkey","address":"145 E. Boughton Rd.","city":"Bolingbrook","state":"IL","zip":"60440","lat":41.71108,"lon":-88.067823,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":2,"Battery":11,"Brakes":54,"Differentials":3,"Emissions & Inspections":51,"Engine":14,"Fluids & Cooling":17,"Fuel System":7,"Lighting":55,"Shop & Misc":62,"Tires":11,"Transmission":7,"Wiper Blades":34}},{"store_number":"175","store_name":"Grease Monkey #175","brand":"Grease Monkey","address":"1503 North Main St.","city":"Normal","state":"IL","zip":"61761","lat":40.52749,"lon":-88.995866,"dma_code":"675","dma_name":"Peoria-Bloomington","categories":{"Air Filters":7,"Battery":1,"Brakes":20,"Differentials":7,"Emissions & Inspections":7,"Engine":3,"Fluids & Cooling":2,"Fuel System":3,"Lighting":17,"Shop & Misc":85,"Tires":86,"Transmission":5,"Wiper Blades":11}},{"store_number":"177","store_name":"Grease Monkey #177","brand":"Grease Monkey","address":"4517 N. Sheridan Rd.","city":"Peoria","state":"IL","zip":"61614","lat":40.742807,"lon":-89.603453,"dma_code":"675","dma_name":"Peoria-Bloomington","categories":{"Air Filters":4,"Battery":10,"Brakes":55,"Differentials":4,"Emissions & Inspections":64,"Engine":15,"Fluids & Cooling":49,"Fuel System":2,"Lighting":15,"Shop & Misc":78,"Suspension & Steering":2,"Tires":22,"Transmission":4,"Wiper Blades":12}},{"store_number":"179","store_name":"Grease Monkey #179","brand":"Grease Monkey","address":"420 W. Chrysler Drive","city":"Belvidere","state":"IL","zip":"61008","lat":42.240036,"lon":-88.844062,"dma_code":"610","dma_name":"Rockford","categories":{"Air Conditioning":1,"Air Filters":6,"Battery":1,"Brakes":5,"Engine":10,"Fluids & Cooling":10,"Fuel System":1,"Lighting":21,"Shop & Misc":64,"Tires":4,"Transmission":21,"Wiper Blades":17}},{"store_number":"180","store_name":"Grease Monkey #180","brand":"Grease Monkey","address":"375 Ware Ave.","city":"Rockford","state":"IL","zip":"61107","lat":42.272554,"lon":-88.978075,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":6,"Battery":8,"Brakes":17,"Emissions & Inspections":37,"Engine":4,"Fluids & Cooling":18,"Fuel System":3,"Lighting":21,"Shop & Misc":77,"Suspension & Steering":1,"Tires":1,"Transmission":12,"Wiper Blades":29}},{"store_number":"181","store_name":"Grease Monkey #181","brand":"Grease Monkey","address":"302 N. Mulford Rd.","city":"Rockford","state":"IL","zip":"61107","lat":42.269353,"lon":-89.000215,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":4,"Battery":5,"Brakes":19,"Emissions & Inspections":59,"Engine":3,"Fluids & Cooling":6,"Fuel System":5,"Lighting":23,"Shop & Misc":51,"Tires":3,"Transmission":4,"Wiper Blades":32}},{"store_number":"183","store_name":"Grease Monkey #183","brand":"Grease Monkey","address":"1624 Sandy Hollow Road","city":"Rockford","state":"IL","zip":"61109","lat":42.223782,"lon":-89.070777,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":8,"Battery":7,"Brakes":17,"Emissions & Inspections":12,"Fluids & Cooling":10,"Fuel System":4,"Lighting":46,"Shop & Misc":49,"Tires":12,"Transmission":5,"Wiper Blades":25}},{"store_number":"186","store_name":"Grease Monkey #186","brand":"Grease Monkey","address":"1701 E. Riverside Blvd.","city":"Rockford","state":"IL","zip":"61114","lat":42.317769,"lon":-89.028428,"dma_code":"610","dma_name":"Rockford","categories":{"Air Filters":9,"Battery":12,"Brakes":91,"Emissions & Inspections":25,"Engine":46,"Fluids & Cooling":51,"Fuel System":1,"Lighting":61,"Shop & Misc":185,"Suspension & Steering":16,"Transmission":9,"Wiper Blades":24}},{"store_number":"187","store_name":"Grease Monkey #187","brand":"Grease Monkey","address":"6302 E. Riverside Blvd.","city":"Loves Park","state":"IL","zip":"61111","lat":42.319206,"lon":-88.994146,"dma_code":"610","dma_name":"Rockford","categories":{"Battery":6,"Brakes":9,"Emissions & Inspections":24,"Engine":1,"Fluids & Cooling":4,"Fuel System":3,"Lighting":24,"Shop & Misc":19,"Suspension & Steering":1,"Tires":1,"Transmission":1,"Wiper Blades":10}},{"store_number":"190","store_name":"Grease Monkey #190","brand":"Grease Monkey","address":"225 S. Randall Rd.","city":"South Elgin","state":"IL","zip":"60177","lat":41.989126,"lon":-88.339064,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":6,"Battery":9,"Brakes":33,"Differentials":2,"Emissions & Inspections":43,"Engine":4,"Fluids & Cooling":5,"Fuel System":4,"Lighting":24,"Shop & Misc":38,"Suspension & Steering":3,"Tires":15,"Transmission":8,"Wiper Blades":29}},{"store_number":"200","store_name":"Grease Monkey #200","brand":"Grease Monkey","address":"790 E. Rand Road","city":"Mt Prospect","state":"IL","zip":"60056","lat":42.071173,"lon":-87.925761,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":5,"Battery":15,"Brakes":18,"Differentials":1,"Emissions & Inspections":88,"Engine":3,"Fluids & Cooling":5,"Fuel System":4,"Lighting":48,"Shop & Misc":46,"Tires":2,"Wiper Blades":28}},{"store_number":"2000","store_name":"Herbert Automotive #2000","brand":"Herbert Automotive","address":"327 Canton Road","city":"Cumming","state":"GA","zip":"30040","lat":34.213186,"lon":-84.144694,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":12,"Battery":10,"Brakes":27,"Emissions & Inspections":234,"Engine":29,"Fluids & Cooling":10,"Fuel System":11,"Lighting":10,"Shop & Misc":192,"Suspension & Steering":9,"Tires":182,"Transmission":9,"Wiper Blades":8}},{"store_number":"2001","store_name":"Herbert Automotive #2001","brand":"Herbert Automotive","address":"7778 Cumming Hwy","city":"Canton","state":"GA","zip":"30115","lat":34.251994,"lon":-84.364018,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":6,"Air Filters":6,"Battery":20,"Brakes":78,"Differentials":2,"Emissions & Inspections":466,"Engine":30,"Fluids & Cooling":18,"Fuel System":3,"Lighting":19,"Shop & Misc":322,"Suspension & Steering":5,"Tires":396,"Transmission":1,"Wiper Blades":10}},{"store_number":"2002","store_name":"Herbert Automotive #2002","brand":"Herbert Automotive","address":"3425 Keith Bridge Road","city":"Cumming","state":"GA","zip":"30041","lat":34.259581,"lon":-84.073024,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":18,"Air Filters":28,"Battery":46,"Brakes":162,"Differentials":3,"Emissions & Inspections":883,"Engine":240,"Fluids & Cooling":43,"Fuel System":19,"Lighting":40,"Shop & Misc":364,"Suspension & Steering":34,"Tires":355,"Transmission":16,"Wiper Blades":57}},{"store_number":"2003","store_name":"Herbert Automotive #2003","brand":"Herbert Automotive","address":"235 Castleberry Industrial Dr","city":"Cumming","state":"GA","zip":"30040","lat":34.19771,"lon":-84.149813,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":50,"Air Filters":13,"Battery":96,"Brakes":278,"Differentials":22,"Emissions & Inspections":1271,"Engine":286,"Fluids & Cooling":114,"Fuel System":20,"Lighting":48,"Shop & Misc":532,"Suspension & Steering":41,"Tires":320,"Transmission":70,"Wiper Blades":28}},{"store_number":"2004","store_name":"Herbert Automotive #2004","brand":"Herbert Automotive","address":"4660 Browns Bridge Road","city":"Cumming","state":"GA","zip":"30041","lat":34.253259,"lon":-84.067645,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Conditioning":30,"Air Filters":11,"Battery":55,"Brakes":221,"Differentials":4,"Emissions & Inspections":2757,"Engine":183,"Fluids & Cooling":108,"Fuel System":22,"Lighting":40,"Shop & Misc":478,"Suspension & Steering":50,"Tires":434,"Transmission":44,"Wiper Blades":16}},{"store_number":"2005","store_name":"Herbert Automotive #2005","brand":"Herbert Automotive","address":"502 Atlanta Road  Suite B","city":"Cumming","state":"GA","zip":"30040","lat":34.197095,"lon":-84.134992,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":103,"Battery":2,"Emissions & Inspections":2144,"Lighting":5,"Shop & Misc":2,"Wiper Blades":39}},{"store_number":"201","store_name":"Grease Monkey #201","brand":"Grease Monkey","address":"1079 W. Maple Ave","city":"Mundelein","state":"IL","zip":"60060","lat":42.274846,"lon":-88.018339,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":11,"Battery":26,"Brakes":62,"Differentials":13,"Emissions & Inspections":86,"Engine":22,"Fluids & Cooling":22,"Fuel System":5,"Lighting":83,"Shop & Misc":139,"Tires":5,"Transmission":34,"Wiper Blades":72}},{"store_number":"202","store_name":"Grease Monkey #202","brand":"Grease Monkey","address":"821 N Green Bay Road","city":"Waukegan","state":"IL","zip":"60085","lat":42.372065,"lon":-87.881911,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":12,"Battery":1,"Brakes":5,"Emissions & Inspections":26,"Fuel System":1,"Lighting":4,"Shop & Misc":5,"Tires":1,"Transmission":2,"Wiper Blades":11}},{"store_number":"205","store_name":"Grease Monkey #205","brand":"Grease Monkey","address":"835 E. Geneva Rd.","city":"Carol Stream","state":"IL","zip":"60188","lat":41.888738,"lon":-88.095001,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":6,"Battery":8,"Brakes":2,"Emissions & Inspections":18,"Engine":5,"Fluids & Cooling":5,"Fuel System":5,"Lighting":24,"Shop & Misc":31,"Tires":4,"Transmission":2,"Wiper Blades":19}},{"store_number":"2070","store_name":"SpeeDee Oil and Auto #2070","brand":"SpeeDee","address":"7038 Snider Plaza","city":"Dallas","state":"TX","zip":"75205","lat":32.850876,"lon":-96.787575,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":11,"Battery":23,"Brakes":20,"Differentials":2,"Emissions & Inspections":673,"Engine":15,"Fluids & Cooling":8,"Fuel System":4,"Lighting":21,"Shop & Misc":83,"Suspension & Steering":1,"Tires":4,"Wiper Blades":34}},{"store_number":"208","store_name":"Grease Monkey #208","brand":"Grease Monkey","address":"2327 Milton Ave","city":"Janesville","state":"WI","zip":"53545","lat":42.711258,"lon":-89.003111,"dma_code":"669","dma_name":"Madison","categories":{"Battery":3,"Emissions & Inspections":1,"Lighting":3,"Shop & Misc":11,"Tires":17,"Wiper Blades":1}},{"store_number":"2082","store_name":"SpeeDee Oil and Auto #2082","brand":"SpeeDee","address":"2412 N. Galloway Drive","city":"Mesquite","state":"TX","zip":"75150","lat":32.797956,"lon":-96.610767,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":14,"Battery":10,"Brakes":20,"Emissions & Inspections":670,"Engine":14,"Fluids & Cooling":8,"Fuel System":2,"Lighting":8,"Shop & Misc":117,"Suspension & Steering":1,"Tires":2,"Wiper Blades":29}},{"store_number":"3004","store_name":"Grease Monkey #3004","brand":"Grease Monkey","address":"115 East Gibson Street","city":"Jasper","state":"TX","zip":"75951","lat":30.908888,"lon":-93.999901,"dma_code":"692","dma_name":"Beaumont-Port Arthur","categories":{"Air Filters":18,"Battery":16,"Brakes":27,"Differentials":9,"Emissions & Inspections":177,"Engine":37,"Fluids & Cooling":13,"Fuel System":12,"Lighting":14,"Shop & Misc":215,"Suspension & Steering":4,"Tires":27,"Transmission":21,"Wiper Blades":38}},{"store_number":"3006","store_name":"Grease Monkey #3006","brand":"Grease Monkey","address":"309 South Timberland Drive","city":"Lufkin","state":"TX","zip":"75901","lat":31.333284,"lon":-94.720334,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":17,"Battery":5,"Brakes":4,"Emissions & Inspections":283,"Engine":1,"Fluids & Cooling":6,"Fuel System":10,"Lighting":10,"Shop & Misc":22,"Tires":1,"Wiper Blades":31}},{"store_number":"3007","store_name":"Grease Monkey #3007","brand":"Grease Monkey","address":"2601 North Street","city":"Nacogdoches","state":"TX","zip":"75965","lat":31.626739,"lon":-94.652567,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":11,"Battery":9,"Brakes":3,"Differentials":7,"Emissions & Inspections":4,"Engine":6,"Fluids & Cooling":17,"Fuel System":4,"Lighting":20,"Shop & Misc":40,"Tires":1,"Transmission":22,"Wiper Blades":40}},{"store_number":"3008","store_name":"Grease Monkey #3008","brand":"Grease Monkey","address":"1620 South Street","city":"Nacogdoches","state":"TX","zip":"75964","lat":31.591244,"lon":-94.665797,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":4,"Battery":5,"Brakes":2,"Differentials":1,"Emissions & Inspections":29,"Engine":2,"Fluids & Cooling":8,"Fuel System":1,"Lighting":5,"Shop & Misc":16,"Suspension & Steering":3,"Tires":3,"Transmission":1,"Wiper Blades":7}},{"store_number":"3010","store_name":"Grease Monkey #3010","brand":"Grease Monkey","address":"1112 West Frank Avenue","city":"Lufkin","state":"TX","zip":"75904","lat":31.337823,"lon":-94.741675,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":8,"Battery":16,"Brakes":6,"Emissions & Inspections":279,"Engine":11,"Fluids & Cooling":10,"Fuel System":12,"Lighting":3,"Shop & Misc":23,"Wiper Blades":35}},{"store_number":"3014","store_name":"Grease Monkey #3014","brand":"Grease Monkey","address":"801 West Bluff Street","city":"Woodville","state":"TX","zip":"75979","lat":30.775446,"lon":-94.423619,"dma_code":"692","dma_name":"Beaumont-Port Arthur","categories":{"Air Filters":13,"Battery":11,"Brakes":32,"Differentials":6,"Emissions & Inspections":17,"Engine":30,"Fluids & Cooling":23,"Fuel System":8,"Lighting":19,"Shop & Misc":142,"Suspension & Steering":5,"Tires":9,"Transmission":2,"Wiper Blades":19}},{"store_number":"3016","store_name":"Grease Monkey #3016","brand":"Grease Monkey","address":"1213 North University Drive","city":"Nacogdoches","state":"TX","zip":"75961","lat":31.614437,"lon":-94.639436,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":13,"Battery":12,"Brakes":18,"Differentials":2,"Emissions & Inspections":168,"Engine":5,"Fluids & Cooling":48,"Fuel System":11,"Lighting":12,"Shop & Misc":50,"Tires":8,"Transmission":19,"Wiper Blades":27}},{"store_number":"3021","store_name":"Grease Monkey #3021","brand":"Grease Monkey","address":"6457 Old Jacksonville Highway","city":"Tyler","state":"TX","zip":"75703","lat":32.278252,"lon":-95.3358,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":14,"Battery":26,"Brakes":35,"Differentials":12,"Emissions & Inspections":29,"Engine":11,"Fluids & Cooling":63,"Fuel System":16,"Lighting":38,"Shop & Misc":103,"Tires":21,"Transmission":11,"Wiper Blades":64}},{"store_number":"3022","store_name":"Grease Monkey #3022","brand":"Grease Monkey","address":"1601 South 1st Street","city":"Lufkin","state":"TX","zip":"75901","lat":31.318969,"lon":-94.727586,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Conditioning":7,"Air Filters":3,"Battery":5,"Brakes":73,"Differentials":2,"Emissions & Inspections":120,"Engine":71,"Fluids & Cooling":22,"Fuel System":23,"Lighting":15,"Shop & Misc":153,"Suspension & Steering":6,"Tires":8,"Transmission":10,"Wiper Blades":10}},{"store_number":"3024","store_name":"Grease Monkey #3024","brand":"Grease Monkey","address":"3610 West Lucas Drive","city":"Beaumont","state":"TX","zip":"77706","lat":30.114649,"lon":-94.147144,"dma_code":"692","dma_name":"Beaumont-Port Arthur","categories":{"Air Filters":10,"Battery":7,"Brakes":44,"Differentials":4,"Emissions & Inspections":38,"Engine":9,"Fluids & Cooling":10,"Fuel System":5,"Lighting":31,"Shop & Misc":91,"Tires":6,"Transmission":2,"Wiper Blades":19}},{"store_number":"3051","store_name":"Grease Monkey #3051","brand":"Grease Monkey","address":"5030 Highway 31 W","city":"Tyler","state":"TX","zip":"75709","lat":32.342941,"lon":-95.359263,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":7,"Battery":4,"Emissions & Inspections":16,"Engine":2,"Fluids & Cooling":6,"Fuel System":12,"Lighting":10,"Shop & Misc":43,"Tires":4,"Transmission":12,"Wiper Blades":13}},{"store_number":"3052","store_name":"Grease Monkey #3052","brand":"Grease Monkey","address":"525 Highway TX-31","city":"Chandler","state":"TX","zip":"75758","lat":32.308904,"lon":-95.474951,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":6,"Battery":6,"Differentials":1,"Emissions & Inspections":49,"Fluids & Cooling":28,"Fuel System":16,"Lighting":14,"Shop & Misc":45,"Transmission":2,"Wiper Blades":43}},{"store_number":"3053","store_name":"Grease Monkey #3053","brand":"Grease Monkey","address":"503 E Tyler St","city":"Athens","state":"TX","zip":"75751","lat":32.205199,"lon":-95.849966,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":5,"Air Filters":13,"Battery":28,"Brakes":189,"Differentials":10,"Emissions & Inspections":37,"Engine":37,"Fluids & Cooling":58,"Fuel System":24,"Lighting":26,"Shop & Misc":351,"Suspension & Steering":30,"Tires":240,"Transmission":9,"Wiper Blades":58}},{"store_number":"3054","store_name":"Grease Monkey #3054","brand":"Grease Monkey","address":"417 W Royall Blvd","city":"Malakoff","state":"TX","zip":"75148","lat":32.170461,"lon":-96.021021,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":4,"Battery":4,"Emissions & Inspections":7,"Fluids & Cooling":2,"Fuel System":4,"Lighting":54,"Shop & Misc":56,"Tires":25,"Wiper Blades":19}},{"store_number":"3055","store_name":"Grease Monkey #3055","brand":"Grease Monkey","address":"406 S Palestine St","city":"Athens","state":"TX","zip":"75751","lat":32.20103,"lon":-95.853848,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":8,"Battery":8,"Emissions & Inspections":7,"Fluids & Cooling":10,"Fuel System":12,"Lighting":6,"Shop & Misc":43,"Tires":9,"Wiper Blades":23}},{"store_number":"3056","store_name":"Grease Monkey #3056","brand":"Grease Monkey","address":"948 US Highway 271 N","city":"Gilmer","state":"TX","zip":"75644","lat":32.742172,"lon":-94.941441,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":12,"Battery":4,"Emissions & Inspections":75,"Fuel System":4,"Lighting":6,"Shop & Misc":32,"Tires":16,"Wiper Blades":20}},{"store_number":"3057","store_name":"Grease Monkey #3057","brand":"Grease Monkey","address":"1176 W Main St","city":"Hallsville","state":"TX","zip":"75650","lat":32.511848,"lon":-94.597453,"dma_code":"612","dma_name":"Shreveport","categories":{"Air Filters":15,"Battery":6,"Emissions & Inspections":38,"Engine":4,"Fluids & Cooling":3,"Fuel System":1,"Lighting":25,"Shop & Misc":12,"Tires":1,"Transmission":7,"Wiper Blades":35}},{"store_number":"315","store_name":"Grease Monkey (ADI) #315","brand":"Grease Monkey (ADI)","address":"11071 S. Parker Rd","city":"Parker","state":"CO","zip":"80134","lat":39.515963,"lon":-104.765268,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":14,"Battery":4,"Brakes":13,"Differentials":11,"Emissions & Inspections":3,"Engine":1,"Fuel System":11,"Lighting":10,"Shop & Misc":45,"Tires":8,"Transmission":9,"Wiper Blades":9}},{"store_number":"34","store_name":"Grease Monkey #34","brand":"Grease Monkey","address":"2520 8th Avenue","city":"Garden City","state":"CO","zip":"80631","lat":40.396333,"lon":-104.690838,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":2,"Battery":3,"Brakes":8,"Fluids & Cooling":14,"Lighting":8,"Shop & Misc":9,"Tires":1,"Wiper Blades":4}},{"store_number":"38","store_name":"Grease Monkey (ADI) #38","brand":"Grease Monkey (ADI)","address":"2890 N Colorado Blvd","city":"Denver","state":"CO","zip":"80207","lat":39.758092,"lon":-104.940216,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":13,"Battery":10,"Brakes":38,"Differentials":30,"Emissions & Inspections":11,"Engine":39,"Fluids & Cooling":30,"Fuel System":2,"Lighting":17,"Shop & Misc":83,"Suspension & Steering":2,"Tires":6,"Transmission":13,"Wiper Blades":8}},{"store_number":"382","store_name":"Grease Monkey #382","brand":"Grease Monkey","address":"13132 Pennsylvania Ave.","city":"Hagerstown","state":"MD","zip":"21742","lat":39.674333,"lon":-77.72016,"dma_code":"511","dma_name":"Washington, DC (Hagrstwn)","categories":{"Air Filters":11,"Battery":40,"Brakes":194,"Differentials":17,"Emissions & Inspections":1,"Engine":67,"Fluids & Cooling":30,"Fuel System":6,"Lighting":64,"Shop & Misc":424,"Suspension & Steering":10,"Tires":203,"Transmission":41,"Wiper Blades":38}},{"store_number":"42","store_name":"Grease Monkey (ADI) #42","brand":"Grease Monkey (ADI)","address":"15321 East Quincy Avenue","city":"Aurora","state":"CO","zip":"80015","lat":39.638898,"lon":-104.809094,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":9,"Brakes":17,"Differentials":14,"Emissions & Inspections":15,"Engine":5,"Fluids & Cooling":59,"Fuel System":5,"Lighting":18,"Shop & Misc":54,"Tires":3,"Transmission":17,"Wiper Blades":16}},{"store_number":"476","store_name":"Grease Monkey #476","brand":"Grease Monkey","address":"5611 15th Ave. NW","city":"Seattle","state":"WA","zip":"98107","lat":47.67003,"lon":-122.376564,"dma_code":"819","dma_name":"Seattle-Tacoma","categories":{"Air Filters":2,"Battery":2,"Brakes":10,"Differentials":5,"Emissions & Inspections":131,"Engine":5,"Fluids & Cooling":47,"Fuel System":5,"Lighting":17,"Shop & Misc":16,"Tires":5,"Wiper Blades":12}},{"store_number":"477","store_name":"Grease Monkey #477","brand":"Grease Monkey","address":"18004 1st Ave. S.","city":"Burien","state":"WA","zip":"98148","lat":47.441516,"lon":-122.334116,"dma_code":"819","dma_name":"Seattle-Tacoma","categories":{"Air Filters":3,"Battery":4,"Brakes":4,"Differentials":2,"Emissions & Inspections":98,"Engine":6,"Fluids & Cooling":9,"Lighting":8,"Shop & Misc":7,"Tires":9,"Transmission":5,"Wiper Blades":6}},{"store_number":"499","store_name":"Grease Monkey #499","brand":"Grease Monkey","address":"17901 Pacific Ave. S","city":"Spanaway","state":"WA","zip":"98387","lat":47.095209,"lon":-122.434315,"dma_code":"819","dma_name":"Seattle-Tacoma","categories":{"Air Filters":3,"Brakes":3,"Differentials":20,"Emissions & Inspections":42,"Engine":4,"Fluids & Cooling":11,"Fuel System":1,"Lighting":12,"Shop & Misc":23,"Tires":1,"Transmission":3,"Wiper Blades":13}},{"store_number":"526","store_name":"Grease Monkey #526","brand":"Grease Monkey","address":"2501 Wabash Ave","city":"Terre Haute","state":"IN","zip":"47803","lat":39.470583,"lon":-87.378515,"dma_code":"581","dma_name":"Terre Haute","categories":{"Air Filters":4,"Battery":18,"Brakes":69,"Emissions & Inspections":47,"Engine":21,"Fluids & Cooling":12,"Fuel System":7,"Lighting":31,"Shop & Misc":119,"Suspension & Steering":1,"Tires":5,"Wiper Blades":19}},{"store_number":"560","store_name":"Grease Monkey (ADI) #560","brand":"Grease Monkey (ADI)","address":"404 W. Bromley Lane","city":"Brighton","state":"CO","zip":"80601","lat":39.972196,"lon":-104.828637,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":5,"Brakes":16,"Differentials":2,"Engine":18,"Fluids & Cooling":7,"Fuel System":2,"Lighting":4,"Shop & Misc":38,"Tires":1,"Transmission":4,"Wiper Blades":22}},{"store_number":"561","store_name":"Grease Monkey #561","brand":"Grease Monkey","address":"1401 N. Prince St","city":"Clovis","state":"NM","zip":"88101","lat":34.412283,"lon":-103.196181,"dma_code":"634","dma_name":"Amarillo","categories":{"Air Filters":4,"Battery":4,"Differentials":1,"Emissions & Inspections":20,"Fluids & Cooling":2,"Fuel System":8,"Lighting":11,"Shop & Misc":104,"Tires":1,"Transmission":6,"Wiper Blades":13}},{"store_number":"599","store_name":"Grease Monkey (ADI) #599","brand":"Grease Monkey (ADI)","address":"12060 Colorado Blvd.","city":"Thornton","state":"CO","zip":"80241","lat":39.915846,"lon":-104.939841,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":5,"Battery":6,"Brakes":11,"Differentials":6,"Fuel System":6,"Lighting":16,"Tires":6,"Transmission":10,"Wiper Blades":8}},{"store_number":"606","store_name":"Grease Monkey #606","brand":"Grease Monkey","address":"1107 West Main Street","city":"Sterling","state":"CO","zip":"80751","lat":40.6248,"lon":-103.229587,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":2,"Brakes":2,"Emissions & Inspections":28,"Engine":1,"Fluids & Cooling":21,"Fuel System":2,"Lighting":13,"Shop & Misc":10,"Tires":1,"Transmission":1,"Wiper Blades":1}},{"store_number":"636","store_name":"Grease Monkey #636","brand":"Grease Monkey","address":"5520 W. 10th St. ","city":"Greeley","state":"CO","zip":"80634","lat":40.421158,"lon":-104.769088,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":4,"Brakes":12,"Differentials":2,"Emissions & Inspections":93,"Engine":3,"Fluids & Cooling":53,"Fuel System":6,"Lighting":12,"Shop & Misc":37,"Tires":26,"Transmission":12,"Wiper Blades":4}},{"store_number":"649","store_name":"Grease Monkey (ADI) #649","brand":"Grease Monkey (ADI)","address":"5450 Front Street","city":"Castle Rock","state":"CO","zip":"80104","lat":39.411518,"lon":-104.863619,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":3,"Brakes":16,"Differentials":2,"Engine":13,"Fluids & Cooling":5,"Fuel System":3,"Lighting":12,"Shop & Misc":27,"Transmission":7,"Wiper Blades":5}},{"store_number":"660","store_name":"Grease Monkey (ADI) #660","brand":"Grease Monkey (ADI)","address":"2334 Main St.","city":"Longmont","state":"CO","zip":"80501","lat":40.20076,"lon":-105.10194,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":4,"Battery":4,"Brakes":7,"Differentials":7,"Fluids & Cooling":14,"Fuel System":5,"Lighting":14,"Shop & Misc":25,"Tires":3,"Transmission":6,"Wiper Blades":7}},{"store_number":"687","store_name":"Grease Monkey (ADI) #687","brand":"Grease Monkey (ADI)","address":"10001 S. Jordan Rd.","city":"Parker","state":"CO","zip":"80134","lat":39.535494,"lon":-104.793944,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":2,"Battery":1,"Differentials":5,"Emissions & Inspections":9,"Fluids & Cooling":12,"Fuel System":4,"Lighting":12,"Shop & Misc":6,"Wiper Blades":3}},{"store_number":"69","store_name":"Grease Monkey (ADI) #69","brand":"Grease Monkey (ADI)","address":"1230 Ken Pratt Blvd.","city":"Longmont","state":"CO","zip":"80501","lat":40.152687,"lon":-105.112705,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":2,"Battery":4,"Brakes":9,"Differentials":1,"Emissions & Inspections":31,"Engine":3,"Fluids & Cooling":35,"Fuel System":1,"Lighting":5,"Shop & Misc":19,"Suspension & Steering":2,"Tires":2,"Transmission":1,"Wiper Blades":6}},{"store_number":"708","store_name":"Grease Monkey (ADI) #708","brand":"Grease Monkey (ADI)","address":"3590 E. 104th Ave.","city":"Thornton","state":"CO","zip":"80233","lat":39.884473,"lon":-104.944991,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":3,"Battery":3,"Brakes":9,"Fluids & Cooling":6,"Fuel System":2,"Lighting":3,"Shop & Misc":15,"Tires":2,"Transmission":2,"Wiper Blades":3}},{"store_number":"710","store_name":"Grease Monkey (ADI) #710","brand":"Grease Monkey (ADI)","address":"8665 S. Quebec St.","city":"Highlands Ranch","state":"CO","zip":"80130","lat":39.559672,"lon":-104.905856,"dma_code":"751","dma_name":"Denver","categories":{"Air Conditioning":2,"Air Filters":3,"Battery":3,"Brakes":8,"Differentials":11,"Emissions & Inspections":4,"Engine":8,"Fluids & Cooling":37,"Fuel System":2,"Lighting":25,"Shop & Misc":29,"Suspension & Steering":2,"Tires":15,"Transmission":6,"Wiper Blades":12}},{"store_number":"733","store_name":"Grease Monkey (ADI) #733","brand":"Grease Monkey (ADI)","address":"6722 S. Potomac St.","city":"Centennial","state":"CO","zip":"80112","lat":39.594594,"lon":-104.829431,"dma_code":"751","dma_name":"Denver","categories":{"Battery":9,"Brakes":5,"Differentials":3,"Emissions & Inspections":10,"Engine":7,"Fluids & Cooling":12,"Fuel System":5,"Lighting":11,"Shop & Misc":36,"Suspension & Steering":1,"Tires":3,"Transmission":11,"Wiper Blades":6}},{"store_number":"743","store_name":"Grease Monkey #743","brand":"Grease Monkey","address":"2470 35th Avenue Ct.","city":"Greeley","state":"CO","zip":"80634","lat":40.396373,"lon":-104.736127,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":11,"Battery":10,"Brakes":32,"Differentials":7,"Emissions & Inspections":33,"Fluids & Cooling":12,"Fuel System":8,"Lighting":20,"Shop & Misc":64,"Tires":9,"Transmission":12,"Wiper Blades":15}},{"store_number":"796","store_name":"Grease Monkey #796","brand":"Grease Monkey","address":"2142 W 1800 N","city":"Clinton","state":"UT","zip":"84015","lat":41.140184,"lon":-112.067202,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":7,"Battery":4,"Brakes":30,"Differentials":3,"Emissions & Inspections":3565,"Engine":6,"Fluids & Cooling":10,"Fuel System":8,"Lighting":72,"Shop & Misc":95,"Suspension & Steering":1,"Tires":13,"Transmission":23,"Wiper Blades":70}},{"store_number":"8001","store_name":"Uncle Ed's #8001","brand":"Uncle Ed's","address":"2050 W Columbia Ave","city":"Battle Creek","state":"MI","zip":"49015","lat":42.297521,"lon":-85.231526,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":11,"Battery":18,"Differentials":5,"Emissions & Inspections":11,"Fluids & Cooling":21,"Fuel System":3,"Lighting":64,"Shop & Misc":57,"Transmission":27,"Wiper Blades":73}},{"store_number":"8003","store_name":"Uncle Ed's #8003","brand":"Uncle Ed's","address":"3715 Stadium Dr","city":"Kalamazoo","state":"MI","zip":"49008","lat":42.270725,"lon":-85.637891,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":14,"Battery":3,"Brakes":1,"Differentials":5,"Emissions & Inspections":6,"Engine":4,"Fluids & Cooling":32,"Fuel System":13,"Lighting":49,"Shop & Misc":32,"Tires":1,"Transmission":8,"Wiper Blades":150}},{"store_number":"8004","store_name":"Uncle Ed's #8004","brand":"Uncle Ed's","address":"3429 S Westnedge","city":"Kalamazoo","state":"MI","zip":"49008","lat":42.256964,"lon":-85.589469,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":6,"Battery":12,"Brakes":8,"Emissions & Inspections":2,"Engine":1,"Fluids & Cooling":10,"Fuel System":2,"Lighting":47,"Shop & Misc":29,"Tires":3,"Transmission":8,"Wiper Blades":43}},{"store_number":"8005","store_name":"Uncle Ed's #8005","brand":"Uncle Ed's","address":"5600 Gull Road","city":"Kalamazoo","state":"MI","zip":"49048","lat":42.323284,"lon":-85.521873,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":5,"Battery":4,"Brakes":1,"Differentials":6,"Emissions & Inspections":92,"Engine":12,"Fluids & Cooling":31,"Fuel System":5,"Lighting":26,"Shop & Misc":40,"Transmission":17,"Wiper Blades":64}},{"store_number":"8006","store_name":"Uncle Ed's #8006","brand":"Uncle Ed's","address":"3801 Rochester Rd","city":"Troy","state":"MI","zip":"48083","lat":42.57429,"lon":-83.128747,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":7,"Battery":3,"Brakes":1,"Emissions & Inspections":33,"Engine":1,"Fluids & Cooling":28,"Fuel System":2,"Lighting":26,"Shop & Misc":19,"Transmission":11,"Wiper Blades":50}},{"store_number":"8007","store_name":"Uncle Ed's #8007","brand":"Uncle Ed's","address":"3160 Washtenaw","city":"Ann Arbor","state":"MI","zip":"48104","lat":42.256777,"lon":-83.697413,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":8,"Battery":5,"Differentials":6,"Emissions & Inspections":98,"Engine":1,"Fluids & Cooling":37,"Fuel System":8,"Lighting":37,"Shop & Misc":53,"Transmission":18,"Wiper Blades":72}},{"store_number":"8008","store_name":"Uncle Ed's #8008","brand":"Uncle Ed's","address":"6236 S Westnedge","city":"Portage","state":"MI","zip":"49002","lat":42.226213,"lon":-85.589652,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":14,"Battery":5,"Differentials":5,"Emissions & Inspections":35,"Engine":1,"Fluids & Cooling":68,"Fuel System":8,"Lighting":81,"Shop & Misc":59,"Transmission":40,"Wiper Blades":188}},{"store_number":"8009","store_name":"Uncle Ed's #8009","brand":"Uncle Ed's","address":"31717 Woodward Ave","city":"Royal Oak","state":"MI","zip":"48073","lat":42.523313,"lon":-83.192096,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":17,"Battery":8,"Emissions & Inspections":58,"Fluids & Cooling":36,"Fuel System":2,"Lighting":33,"Shop & Misc":28,"Tires":2,"Transmission":9,"Wiper Blades":109}},{"store_number":"8010","store_name":"Uncle Ed's #8010","brand":"Uncle Ed's","address":"465 Twelve Mile Rd","city":"Madison Heights","state":"MI","zip":"48071","lat":42.504331,"lon":-83.110261,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":15,"Battery":2,"Emissions & Inspections":19,"Engine":1,"Fluids & Cooling":6,"Fuel System":1,"Lighting":21,"Shop & Misc":14,"Transmission":2,"Wiper Blades":63}},{"store_number":"8011","store_name":"Uncle Ed's #8011","brand":"Uncle Ed's","address":"24086 Middlebelt","city":"Farmington Hills","state":"MI","zip":"48336","lat":42.470325,"lon":-83.337252,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":3,"Battery":7,"Differentials":3,"Emissions & Inspections":32,"Engine":2,"Fluids & Cooling":34,"Fuel System":3,"Lighting":26,"Shop & Misc":49,"Transmission":16,"Wiper Blades":81}},{"store_number":"8012","store_name":"Uncle Ed's #8012","brand":"Uncle Ed's","address":"4215 S Portage Rd","city":"Kalamazoo","state":"MI","zip":"49001","lat":42.248993,"lon":-85.560102,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":11,"Battery":2,"Emissions & Inspections":51,"Engine":2,"Fluids & Cooling":49,"Fuel System":4,"Lighting":25,"Shop & Misc":42,"Transmission":9,"Wiper Blades":88}},{"store_number":"8013","store_name":"Uncle Ed's #8013","brand":"Uncle Ed's","address":"32940 Van Dyke","city":"Warren","state":"MI","zip":"48093","lat":42.536269,"lon":-83.02885,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":5,"Battery":4,"Brakes":2,"Differentials":2,"Emissions & Inspections":5,"Engine":1,"Fluids & Cooling":22,"Lighting":16,"Shop & Misc":21,"Transmission":3,"Wiper Blades":43}},{"store_number":"8014","store_name":"Uncle Ed's #8014","brand":"Uncle Ed's","address":"1116 W 14 Mile Rd","city":"Clawson","state":"MI","zip":"48017","lat":42.533435,"lon":-83.161939,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":11,"Battery":16,"Brakes":3,"Differentials":13,"Emissions & Inspections":285,"Engine":2,"Fluids & Cooling":103,"Fuel System":12,"Lighting":72,"Shop & Misc":65,"Tires":4,"Transmission":42,"Wiper Blades":125}},{"store_number":"8015","store_name":"Uncle Ed's #8015","brand":"Uncle Ed's","address":"36471 Plymouth Rd","city":"Livonia","state":"MI","zip":"48150","lat":42.367269,"lon":-83.402619,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":11,"Emissions & Inspections":17,"Engine":1,"Fluids & Cooling":14,"Lighting":24,"Shop & Misc":29,"Transmission":8,"Wiper Blades":64}},{"store_number":"8016","store_name":"Uncle Ed's #8016","brand":"Uncle Ed's","address":"30740 W 12 Mile Rd","city":"Farmington Hills","state":"MI","zip":"48334","lat":42.49958,"lon":-83.356875,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":12,"Battery":8,"Differentials":6,"Emissions & Inspections":96,"Engine":3,"Fluids & Cooling":46,"Fuel System":7,"Lighting":48,"Shop & Misc":45,"Transmission":18,"Wiper Blades":101}},{"store_number":"8017","store_name":"Uncle Ed's #8017","brand":"Uncle Ed's","address":"3825 Wynn Rd","city":"Kalamazoo","state":"MI","zip":"49048","lat":42.271797,"lon":-85.533162,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":4,"Battery":2,"Emissions & Inspections":2,"Fluids & Cooling":18,"Fuel System":1,"Lighting":23,"Shop & Misc":13,"Transmission":2,"Wiper Blades":57}},{"store_number":"8018","store_name":"Uncle Ed's #8018","brand":"Uncle Ed's","address":"5280 Beckley Rd","city":"Battle Creek","state":"MI","zip":"49015","lat":42.260889,"lon":-85.19499,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":11,"Battery":7,"Differentials":3,"Emissions & Inspections":10,"Engine":4,"Fluids & Cooling":34,"Fuel System":4,"Lighting":45,"Shop & Misc":33,"Tires":1,"Transmission":8,"Wiper Blades":96}},{"store_number":"8019","store_name":"Uncle Ed's #8019","brand":"Uncle Ed's","address":"28820 Harper Ave","city":"St Clair Shores","state":"MI","zip":"48081","lat":42.506378,"lon":-82.89775,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":6,"Battery":2,"Emissions & Inspections":13,"Fuel System":3,"Lighting":11,"Shop & Misc":3,"Wiper Blades":56}},{"store_number":"8020","store_name":"Uncle Ed's #8020","brand":"Uncle Ed's","address":"33401 Gratiot Ave","city":"Clinton Township","state":"MI","zip":"48035","lat":42.542192,"lon":-82.908034,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":6,"Battery":2,"Emissions & Inspections":4,"Fluids & Cooling":2,"Lighting":16,"Shop & Misc":25,"Wiper Blades":73}},{"store_number":"8021","store_name":"Uncle Ed's #8021","brand":"Uncle Ed's","address":"240 N Drake Rd","city":"Kalamazoo","state":"MI","zip":"49006","lat":42.29424,"lon":-85.648015,"dma_code":"563","dma_name":"Grand Rapids-Kalmzoo-B.Crk","categories":{"Air Filters":9,"Battery":6,"Differentials":3,"Emissions & Inspections":17,"Engine":3,"Fluids & Cooling":52,"Fuel System":14,"Lighting":58,"Shop & Misc":72,"Transmission":23,"Wiper Blades":149}},{"store_number":"8022","store_name":"Uncle Ed's #8022","brand":"Uncle Ed's","address":"1995 S Telegraph Rd","city":"Bloomfield Township","state":"MI","zip":"48302","lat":42.610004,"lon":-83.301679,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":9,"Battery":1,"Differentials":2,"Emissions & Inspections":44,"Fluids & Cooling":19,"Fuel System":12,"Lighting":42,"Shop & Misc":35,"Transmission":19,"Wiper Blades":135}},{"store_number":"8023","store_name":"Uncle Ed's #8023","brand":"Uncle Ed's","address":"31301 Groesbeck Hwy","city":"Fraser","state":"MI","zip":"48026","lat":42.526496,"lon":-82.945259,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":4,"Battery":2,"Fluids & Cooling":14,"Fuel System":3,"Lighting":4,"Shop & Misc":15,"Tires":3,"Transmission":8,"Wiper Blades":8}},{"store_number":"8024","store_name":"Uncle Ed's #8024","brand":"Uncle Ed's","address":"3470 Highland Rd","city":"Waterford","state":"MI","zip":"48328","lat":42.641635,"lon":-83.354583,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":3,"Battery":2,"Differentials":1,"Emissions & Inspections":207,"Fluids & Cooling":37,"Fuel System":1,"Lighting":10,"Shop & Misc":5,"Transmission":14,"Wiper Blades":50}},{"store_number":"8025","store_name":"Uncle Ed's #8025","brand":"Uncle Ed's","address":"2988 E Big Beaver","city":"Troy","state":"MI","zip":"48083","lat":42.563518,"lon":-83.089317,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":3,"Battery":1,"Emissions & Inspections":6,"Fluids & Cooling":8,"Fuel System":3,"Lighting":18,"Shop & Misc":5,"Transmission":2,"Wiper Blades":48}},{"store_number":"8026","store_name":"Uncle Ed's #8026","brand":"Uncle Ed's","address":"2276 W Stadium Dr","city":"Ann Arbor","state":"MI","zip":"48103","lat":42.275578,"lon":-83.777276,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":18,"Battery":35,"Differentials":10,"Emissions & Inspections":51,"Engine":6,"Fluids & Cooling":22,"Fuel System":11,"Lighting":46,"Shop & Misc":97,"Transmission":50,"Wiper Blades":133}},{"store_number":"8027","store_name":"Uncle Ed's #8027","brand":"Uncle Ed's","address":"49830 Van Dyke","city":"Shelby Township","state":"MI","zip":"48317","lat":42.661015,"lon":-83.033161,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":4,"Battery":2,"Brakes":1,"Differentials":3,"Emissions & Inspections":31,"Engine":11,"Fluids & Cooling":4,"Fuel System":1,"Lighting":17,"Shop & Misc":14,"Suspension & Steering":1,"Transmission":6,"Wiper Blades":59}},{"store_number":"8028","store_name":"Uncle Ed's #8028","brand":"Uncle Ed's","address":"31311 23 Mile Rd","city":"New Baltimore","state":"MI","zip":"48047","lat":42.675384,"lon":-82.794174,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":5,"Battery":1,"Differentials":6,"Fluids & Cooling":11,"Fuel System":2,"Lighting":15,"Shop & Misc":15,"Transmission":17,"Wiper Blades":34}},{"store_number":"8029","store_name":"Uncle Ed's #8029","brand":"Uncle Ed's","address":"20951 Hall Rd","city":"Macomb","state":"MI","zip":"48044","lat":42.629,"lon":-82.910564,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":5,"Battery":1,"Emissions & Inspections":1,"Fluids & Cooling":9,"Lighting":18,"Shop & Misc":11,"Transmission":2,"Wiper Blades":59}},{"store_number":"803","store_name":"Grease Monkey #803","brand":"Grease Monkey","address":"589 W 130 N","city":"American Fork","state":"UT","zip":"84003","lat":40.379308,"lon":-111.813998,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":1,"Battery":1,"Brakes":20,"Differentials":5,"Emissions & Inspections":304,"Engine":4,"Fluids & Cooling":52,"Fuel System":3,"Lighting":2,"Shop & Misc":38,"Suspension & Steering":2,"Tires":5,"Transmission":3,"Wiper Blades":8}},{"store_number":"8030","store_name":"Uncle Ed's #8030","brand":"Uncle Ed's","address":"4140 Ellsworth Rd","city":"Ypsilanti","state":"MI","zip":"48197","lat":42.230057,"lon":-83.659705,"dma_code":"505","dma_name":"Detroit","categories":{"Air Filters":24,"Battery":10,"Differentials":7,"Emissions & Inspections":77,"Engine":4,"Fluids & Cooling":26,"Fuel System":16,"Lighting":38,"Shop & Misc":60,"Suspension & Steering":1,"Transmission":53,"Wiper Blades":112}},{"store_number":"8035","store_name":"Economy Oil Change #8035","brand":"Economy Oil Change","address":"315 Broad St","city":"Manchester","state":"CT","zip":"06040","lat":41.778298,"lon":-72.533315,"dma_code":"533","dma_name":"Hartford & New Haven","categories":{"Air Conditioning":2,"Air Filters":13,"Battery":5,"Differentials":44,"Emissions & Inspections":313,"Fluids & Cooling":44,"Fuel System":2,"Lighting":55,"Shop & Misc":88,"Tires":13,"Transmission":38,"Wiper Blades":115}},{"store_number":"8036","store_name":"Economy Oil Change #8036","brand":"Economy Oil Change","address":"315 Hartford Turnpike","city":"Vernon","state":"CT","zip":"06066","lat":41.827259,"lon":-72.490478,"dma_code":"533","dma_name":"Hartford & New Haven","categories":{"Air Filters":5,"Battery":9,"Brakes":67,"Differentials":8,"Emissions & Inspections":126,"Engine":20,"Fluids & Cooling":8,"Lighting":17,"Shop & Misc":108,"Suspension & Steering":1,"Tires":42,"Transmission":23,"Wiper Blades":27}},{"store_number":"8037","store_name":"Economy Oil Change #8037","brand":"Economy Oil Change","address":"2711 Main St","city":"Glastonbury","state":"CT","zip":"06033","lat":41.716374,"lon":-72.612252,"dma_code":"533","dma_name":"Hartford & New Haven","categories":{"Air Filters":8,"Battery":4,"Differentials":29,"Emissions & Inspections":155,"Engine":1,"Fluids & Cooling":14,"Fuel System":2,"Lighting":39,"Shop & Misc":35,"Transmission":22,"Wiper Blades":67}},{"store_number":"8039","store_name":"Grease Monkey #8039","brand":"Grease Monkey","address":"5829 South 1900 West","city":"Roy","state":"UT","zip":"84067","lat":41.157313,"lon":-112.026228,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":7,"Battery":1,"Brakes":46,"Emissions & Inspections":531,"Engine":13,"Fluids & Cooling":9,"Fuel System":1,"Lighting":20,"Shop & Misc":45,"Tires":4,"Transmission":4,"Wiper Blades":2}},{"store_number":"8040","store_name":"Grease Monkey #8040","brand":"Grease Monkey","address":"215 Omaha St","city":"Rapid City","state":"SD","zip":"57701","lat":44.081997,"lon":-103.219846,"dma_code":"764","dma_name":"Rapid City","categories":{"Air Filters":3,"Brakes":8,"Differentials":6,"Emissions & Inspections":15,"Engine":10,"Fluids & Cooling":7,"Lighting":1,"Shop & Misc":27,"Tires":1,"Transmission":8,"Wiper Blades":1}},{"store_number":"8041","store_name":"Grease Monkey #8041","brand":"Grease Monkey","address":"509 E. Omaha St","city":"Rapid City","state":"SD","zip":"57701","lat":44.081376,"lon":-103.202935,"dma_code":"764","dma_name":"Rapid City","categories":{"Air Filters":1,"Differentials":5,"Emissions & Inspections":17,"Engine":4,"Fluids & Cooling":8,"Fuel System":9,"Lighting":4,"Shop & Misc":23,"Tires":1,"Transmission":15,"Wiper Blades":9}},{"store_number":"8042","store_name":"Grease Monkey #8042","brand":"Grease Monkey","address":"1614 Mt. Rushmore St","city":"Rapid City","state":"SD","zip":"57701","lat":44.070418,"lon":-103.232348,"dma_code":"764","dma_name":"Rapid City","categories":{"Air Filters":7,"Brakes":6,"Differentials":10,"Emissions & Inspections":11,"Engine":2,"Fluids & Cooling":8,"Fuel System":12,"Lighting":1,"Shop & Misc":24,"Transmission":9,"Wiper Blades":8}},{"store_number":"8043","store_name":"Grease Monkey #8043","brand":"Grease Monkey","address":"643 N. LaCrosse St","city":"Rapid City","state":"SD","zip":"57701","lat":44.08969,"lon":-103.202081,"dma_code":"764","dma_name":"Rapid City","categories":{"Air Filters":5,"Battery":1,"Emissions & Inspections":3,"Engine":1,"Fluids & Cooling":3,"Fuel System":1,"Lighting":3,"Shop & Misc":8,"Transmission":4,"Wiper Blades":7}},{"store_number":"8044","store_name":"Grease Monkey #8044","brand":"Grease Monkey","address":"2236 Mercantile Drive","city":"Eau Claire","state":"WI","zip":"54703","lat":44.822592,"lon":-91.544662,"dma_code":"702","dma_name":"La Crosse-Eau Claire","categories":{"Air Filters":3,"Battery":7,"Brakes":6,"Emissions & Inspections":7,"Engine":5,"Fluids & Cooling":4,"Lighting":26,"Shop & Misc":37,"Suspension & Steering":5,"Tires":5,"Transmission":9,"Wiper Blades":13}},{"store_number":"8045","store_name":"Grease Monkey #8045","brand":"Grease Monkey","address":"2104 Highland Ave","city":"Eau Claire","state":"WI","zip":"54701","lat":44.80743,"lon":-91.470646,"dma_code":"702","dma_name":"La Crosse-Eau Claire","categories":{"Air Filters":3,"Battery":35,"Brakes":41,"Differentials":2,"Emissions & Inspections":22,"Engine":5,"Fluids & Cooling":9,"Lighting":29,"Shop & Misc":70,"Tires":1,"Transmission":2,"Wiper Blades":21}},{"store_number":"8046","store_name":"Grease Monkey #8046","brand":"Grease Monkey","address":"123 Praire View Rd","city":"Chippewa Falls","state":"WI","zip":"54729","lat":44.913149,"lon":-91.389999,"dma_code":"702","dma_name":"La Crosse-Eau Claire","categories":{"Air Filters":2,"Battery":10,"Brakes":4,"Emissions & Inspections":6,"Engine":5,"Fuel System":1,"Lighting":26,"Shop & Misc":30,"Tires":3,"Transmission":6,"Wiper Blades":16}},{"store_number":"8047","store_name":"SpeeDee Oil and Auto #8047","brand":"SpeeDee","address":"461 Stanley K Tanger Drive","city":"Locust Grove","state":"GA","zip":"30248","lat":33.347839,"lon":-84.120701,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":15,"Battery":5,"Brakes":22,"Emissions & Inspections":934,"Engine":9,"Fluids & Cooling":14,"Fuel System":6,"Lighting":194,"Shop & Misc":53,"Tires":12,"Transmission":2,"Wiper Blades":102}},{"store_number":"8048","store_name":"SpeeDee Oil and Auto #8048","brand":"SpeeDee","address":"3730 Cornhusker Hwy","city":"Lincoln","state":"NE","zip":"68504","lat":40.844823,"lon":-96.667408,"dma_code":"722","dma_name":"Lincoln & Hastings-Krny","categories":{"Air Filters":2,"Battery":5,"Brakes":14,"Differentials":4,"Emissions & Inspections":27,"Engine":13,"Fluids & Cooling":9,"Fuel System":3,"Lighting":8,"Shop & Misc":53,"Suspension & Steering":9,"Tires":12,"Transmission":11,"Wiper Blades":10}},{"store_number":"8049","store_name":"Kwik Kar #8049","brand":"Kwik Kar","address":"2181 North  US 77","city":"Waxahachie","state":"TX","zip":"75165","lat":32.438195,"lon":-96.837995,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":13,"Air Filters":23,"Battery":38,"Brakes":80,"Differentials":3,"Emissions & Inspections":1445,"Engine":39,"Fluids & Cooling":25,"Fuel System":20,"Lighting":18,"Shop & Misc":172,"Suspension & Steering":2,"Tires":10,"Transmission":13,"Wiper Blades":44}},{"store_number":"805","store_name":"Grease Monkey #805","brand":"Grease Monkey","address":"214 E 13800 S","city":"Draper","state":"UT","zip":"84020","lat":40.500431,"lon":-111.884447,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":2,"Battery":5,"Brakes":58,"Differentials":5,"Emissions & Inspections":2068,"Engine":10,"Fluids & Cooling":10,"Fuel System":6,"Lighting":32,"Shop & Misc":67,"Tires":1,"Transmission":16,"Wiper Blades":25}},{"store_number":"8050","store_name":"SpeeDee Oil and Auto #8050","brand":"SpeeDee","address":"1201 N. Santa Fe Ave","city":"Edmond","state":"OK","zip":"73003","lat":35.666627,"lon":-97.514674,"dma_code":"650","dma_name":"Oklahoma City","categories":{"Air Conditioning":3,"Air Filters":4,"Battery":24,"Brakes":51,"Differentials":2,"Emissions & Inspections":51,"Engine":72,"Fluids & Cooling":51,"Fuel System":5,"Lighting":32,"Shop & Misc":132,"Suspension & Steering":10,"Tires":8,"Transmission":7,"Wiper Blades":5}},{"store_number":"8051","store_name":"SpeeDee Oil and Auto #8051","brand":"SpeeDee","address":"8613 N. Council Rd","city":"Oklahoma City","state":"OK","zip":"73132","lat":35.558901,"lon":-97.656907,"dma_code":"650","dma_name":"Oklahoma City","categories":{"Air Conditioning":3,"Air Filters":13,"Battery":11,"Brakes":28,"Differentials":12,"Emissions & Inspections":6,"Engine":16,"Fluids & Cooling":41,"Fuel System":11,"Lighting":16,"Shop & Misc":157,"Suspension & Steering":2,"Tires":25,"Transmission":33,"Wiper Blades":6}},{"store_number":"8052","store_name":"Grease Monkey #8052","brand":"Grease Monkey","address":"96 Portsmouth Ave","city":"Exeter","state":"NH","zip":"3833","lat":42.988033,"lon":-70.935318,"dma_code":"506","dma_name":"Boston (Manchester)","categories":{"Air Filters":1,"Battery":8,"Brakes":55,"Differentials":4,"Emissions & Inspections":95,"Engine":20,"Fluids & Cooling":9,"Fuel System":6,"Lighting":10,"Shop & Misc":87,"Suspension & Steering":13,"Tires":5,"Transmission":2,"Wiper Blades":34}},{"store_number":"8054","store_name":"Grease Monkey #8054","brand":"Grease Monkey","address":"213 CO 105","city":"Monument","state":"CO","zip":"80132","lat":39.092485,"lon":-104.864194,"dma_code":"752","dma_name":"Colorado Springs-Pueblo","categories":{"Air Filters":4,"Battery":3,"Brakes":14,"Differentials":9,"Engine":2,"Fluids & Cooling":20,"Fuel System":1,"Lighting":8,"Shop & Misc":15,"Transmission":3,"Wiper Blades":13}},{"store_number":"8055","store_name":"Grease Monkey #8055","brand":"Grease Monkey","address":"2301 S. Townsend Ave","city":"Montrose","state":"CO","zip":"81401","lat":38.461278,"lon":-107.864745,"dma_code":"773","dma_name":"Grand Junction-Montrose","categories":{"Air Conditioning":2,"Air Filters":5,"Battery":1,"Brakes":17,"Differentials":7,"Emissions & Inspections":1,"Engine":8,"Fluids & Cooling":14,"Fuel System":6,"Lighting":4,"Shop & Misc":39,"Suspension & Steering":1,"Tires":3,"Transmission":3,"Wiper Blades":1}},{"store_number":"8057","store_name":"Grease Monkey #8057","brand":"Grease Monkey","address":"2610 Hwy 35 N","city":"Rockport","state":"TX","zip":"78382","lat":28.052267,"lon":-97.04127,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Filters":8,"Battery":9,"Brakes":14,"Differentials":7,"Emissions & Inspections":69,"Engine":4,"Fluids & Cooling":5,"Fuel System":12,"Lighting":15,"Shop & Misc":94,"Tires":16,"Transmission":12,"Wiper Blades":36}},{"store_number":"8058","store_name":"Grease Monkey #8058","brand":"Grease Monkey","address":"4035 S Padre Island Dr","city":"Corpus Christi","state":"TX","zip":"78411","lat":27.721185,"lon":-97.39671,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Filters":14,"Battery":2,"Differentials":8,"Emissions & Inspections":45,"Engine":2,"Fluids & Cooling":14,"Fuel System":6,"Lighting":2,"Shop & Misc":25,"Transmission":18,"Wiper Blades":10}},{"store_number":"8059","store_name":"Grease Monkey #8059","brand":"Grease Monkey","address":"4825 S Staples St","city":"Corpus Christi","state":"TX","zip":"78411","lat":27.714194,"lon":-97.371124,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Conditioning":4,"Air Filters":16,"Battery":9,"Brakes":68,"Differentials":10,"Emissions & Inspections":46,"Engine":25,"Fluids & Cooling":33,"Fuel System":22,"Lighting":8,"Shop & Misc":171,"Suspension & Steering":2,"Tires":4,"Transmission":9,"Wiper Blades":35}},{"store_number":"8060","store_name":"Grease Monkey #8060","brand":"Grease Monkey","address":"1029 Airline Rd","city":"Corpus Christi","state":"TX","zip":"78412","lat":27.712407,"lon":-97.362417,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Filters":18,"Battery":2,"Differentials":6,"Emissions & Inspections":48,"Fluids & Cooling":13,"Fuel System":3,"Lighting":11,"Shop & Misc":14,"Transmission":8,"Wiper Blades":35}},{"store_number":"8061","store_name":"Grease Monkey #8061","brand":"Grease Monkey","address":"5342 Kostoryz Rd","city":"Corpus Christi","state":"TX","zip":"78415","lat":27.724749,"lon":-97.415142,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Filters":19,"Differentials":4,"Emissions & Inspections":4,"Fluids & Cooling":24,"Fuel System":13,"Lighting":3,"Shop & Misc":30,"Transmission":27,"Wiper Blades":23}},{"store_number":"8062","store_name":"Grease Monkey #8062","brand":"Grease Monkey","address":"336 W Cleveland Blvd","city":"Aransas Pass","state":"TX","zip":"78336","lat":27.911466,"lon":-97.143932,"dma_code":"600","dma_name":"Corpus Christi","categories":{"Air Filters":4,"Battery":9,"Brakes":52,"Emissions & Inspections":17,"Engine":15,"Fluids & Cooling":12,"Fuel System":6,"Lighting":3,"Shop & Misc":115,"Suspension & Steering":2,"Tires":1,"Transmission":10,"Wiper Blades":6}},{"store_number":"8063","store_name":"Grease Monkey #8063","brand":"Grease Monkey","address":"11274 S Fortuna Rd","city":"Yuma","state":"AZ","zip":"85367","lat":32.667734,"lon":-114.447566,"dma_code":"771","dma_name":"Yuma-El Centro","categories":{"Air Filters":11,"Brakes":4,"Emissions & Inspections":12,"Engine":1,"Fluids & Cooling":10,"Fuel System":6,"Lighting":5,"Shop & Misc":152,"Tires":3,"Transmission":15,"Wiper Blades":7}},{"store_number":"8064","store_name":"Grease Monkey #8064","brand":"Grease Monkey","address":"328 Tenahah Street","city":"Center","state":"TX","zip":"75935","lat":31.800129,"lon":-94.185238,"dma_code":"612","dma_name":"Shreveport","categories":{"Air Filters":5,"Battery":8,"Emissions & Inspections":353,"Engine":3,"Fluids & Cooling":14,"Fuel System":5,"Lighting":12,"Shop & Misc":15,"Tires":2,"Transmission":2,"Wiper Blades":27}},{"store_number":"8065","store_name":"Grease Monkey #8065","brand":"Grease Monkey","address":"705 US-79","city":"Henderson","state":"TX","zip":"75652","lat":32.159698,"lon":-94.784474,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":8,"Battery":7,"Differentials":6,"Emissions & Inspections":62,"Fluids & Cooling":17,"Fuel System":7,"Lighting":16,"Shop & Misc":29,"Wiper Blades":25}},{"store_number":"8066","store_name":"Grease Monkey #8066","brand":"Grease Monkey","address":"504 Washington Ave","city":"Mansfield","state":"LA","zip":"71052","lat":32.031509,"lon":-93.711115,"dma_code":"612","dma_name":"Shreveport","categories":{"Air Filters":7,"Battery":2,"Brakes":2,"Differentials":3,"Emissions & Inspections":19,"Engine":2,"Fluids & Cooling":4,"Fuel System":2,"Lighting":5,"Shop & Misc":13,"Wiper Blades":19}},{"store_number":"8067","store_name":"Grease Monkey #8067","brand":"Grease Monkey","address":"11042 US 84","city":"Joaquin","state":"TX","zip":"75954","lat":31.964393,"lon":-94.047692,"dma_code":"612","dma_name":"Shreveport","categories":{"Air Filters":3,"Emissions & Inspections":11,"Engine":1,"Fuel System":3,"Lighting":5,"Shop & Misc":8,"Tires":1,"Wiper Blades":8}},{"store_number":"8068","store_name":"Grease Monkey #8068","brand":"Grease Monkey","address":"715 W. Columbia St","city":"San Augustine","state":"TX","zip":"75972","lat":31.531323,"lon":-94.115165,"dma_code":"709","dma_name":"Tyler-Longview(Lfkn&Ncgd)","categories":{"Air Filters":6,"Emissions & Inspections":42,"Engine":2,"Fluids & Cooling":11,"Fuel System":1,"Lighting":2,"Shop & Misc":9,"Transmission":1,"Wiper Blades":23}},{"store_number":"8094","store_name":"Grease Monkey #8094","brand":"Grease Monkey","address":"711 East Sunflower","city":"Cleveland","state":"MS","zip":"38732","lat":33.747613,"lon":-90.712486,"dma_code":"647","dma_name":"Greenwood-Greenville","categories":{"Air Filters":16,"Battery":2,"Brakes":12,"Emissions & Inspections":1,"Engine":7,"Lighting":16,"Shop & Misc":68,"Suspension & Steering":1,"Tires":2,"Transmission":13,"Wiper Blades":26}},{"store_number":"8095","store_name":"Grease Monkey #8095","brand":"Grease Monkey","address":"847 Highway 1 South","city":"Greenville","state":"MS","zip":"38701","lat":33.421549,"lon":-91.038236,"dma_code":"647","dma_name":"Greenwood-Greenville","categories":{"Air Filters":5,"Battery":1,"Brakes":2,"Differentials":1,"Emissions & Inspections":20,"Engine":1,"Fluids & Cooling":3,"Lighting":4,"Shop & Misc":17,"Tires":1,"Transmission":3,"Wiper Blades":24}},{"store_number":"8097","store_name":"Grease Monkey #8097","brand":"Grease Monkey","address":"317 Highway 12 East","city":"Kosciusko","state":"MS","zip":"39090","lat":33.06579,"lon":-89.585512,"dma_code":"718","dma_name":"Jackson, MS","categories":{"Air Filters":5,"Battery":2,"Engine":9,"Fluids & Cooling":2,"Fuel System":2,"Lighting":3,"Shop & Misc":34,"Tires":1,"Transmission":7,"Wiper Blades":11}},{"store_number":"8098","store_name":"Grease Monkey #8098","brand":"Grease Monkey","address":"1814 University Ave","city":"Oxford","state":"MS","zip":"38655","lat":34.362695,"lon":-89.510545,"dma_code":"640","dma_name":"Memphis","categories":{"Air Conditioning":10,"Air Filters":15,"Battery":17,"Brakes":93,"Differentials":3,"Emissions & Inspections":1,"Engine":51,"Fluids & Cooling":16,"Fuel System":5,"Lighting":38,"Shop & Misc":322,"Suspension & Steering":1,"Tires":71,"Transmission":22,"Wiper Blades":27}},{"store_number":"8099","store_name":"Grease Monkey #8099","brand":"Grease Monkey","address":"268 SGT Prentiss Drive","city":"Natchez","state":"MS","zip":"39120","lat":31.546718,"lon":-91.374209,"dma_code":"718","dma_name":"Jackson, MS","categories":{"Air Filters":19,"Battery":6,"Brakes":18,"Emissions & Inspections":4,"Engine":11,"Fluids & Cooling":6,"Fuel System":8,"Lighting":13,"Shop & Misc":68,"Suspension & Steering":3,"Transmission":10,"Wiper Blades":10}},{"store_number":"8100","store_name":"SpeeDee Oil Change & Auto Service #8100","brand":"SpeeDee","address":"","city":"Ingleside","state":"IL","zip":"60041","lat":42.37284,"lon":-88.149569,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":5,"Battery":21,"Brakes":140,"Differentials":4,"Emissions & Inspections":21,"Engine":83,"Fluids & Cooling":45,"Fuel System":7,"Lighting":16,"Shop & Misc":420,"Suspension & Steering":19,"Tires":360,"Transmission":10,"Wiper Blades":11}},{"store_number":"8101","store_name":"Kwik Kar #8101","brand":"Kwik Kar","address":"1401 West Chapman Dr.","city":"Sanger","state":"TX","zip":"76266","lat":33.367218,"lon":-97.180425,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":2,"Battery":19,"Brakes":4,"Emissions & Inspections":238,"Engine":2,"Fluids & Cooling":25,"Fuel System":6,"Lighting":10,"Shop & Misc":29,"Tires":1,"Wiper Blades":27}},{"store_number":"8103","store_name":"Grease Monkey #8103","brand":"Grease Monkey","address":"5387 Highway 90 W","city":"Mobile","state":"AL","zip":"36619","lat":30.600252,"lon":-88.166489,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":8,"Battery":5,"Brakes":2,"Differentials":2,"Emissions & Inspections":12,"Engine":5,"Fuel System":3,"Lighting":2,"Shop & Misc":12,"Tires":1,"Wiper Blades":7}},{"store_number":"8104","store_name":"Grease Monkey #8104","brand":"Grease Monkey","address":"3247 Dauphin ST","city":"Mobile","state":"AL","zip":"36606","lat":30.68857,"lon":-88.122186,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":5,"Battery":3,"Brakes":1,"Emissions & Inspections":28,"Engine":4,"Fluids & Cooling":2,"Fuel System":1,"Lighting":6,"Shop & Misc":14,"Transmission":2,"Wiper Blades":14}},{"store_number":"8105","store_name":"American Lubefast #8105","brand":"American Lubefast","address":"7047 Airport Blvd","city":"Mobile","state":"AL","zip":"36608","lat":30.684803,"lon":-88.206037,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":8,"Battery":5,"Brakes":6,"Differentials":7,"Emissions & Inspections":35,"Engine":5,"Fluids & Cooling":6,"Fuel System":3,"Lighting":6,"Shop & Misc":24,"Transmission":2,"Wiper Blades":12}},{"store_number":"8106","store_name":"Grease Monkey #8106","brand":"Grease Monkey","address":"4561 Lake Avenue","city":"White Bear Lake","state":"MN","zip":"55110","lat":45.079561,"lon":-93.014858,"dma_code":"613","dma_name":"Minneapolis-St. Paul","categories":{"Air Filters":2,"Battery":1,"Brakes":2,"Emissions & Inspections":1,"Fuel System":1,"Lighting":8,"Shop & Misc":19,"Tires":5,"Transmission":2,"Wiper Blades":10}},{"store_number":"8107","store_name":"Grease Monkey #8107","brand":"Grease Monkey","address":"703 S. Albany Ave","city":"Bolivar","state":"MO","zip":"65613","lat":37.607468,"lon":-93.407913,"dma_code":"619","dma_name":"Springfield, MO","categories":{"Air Conditioning":1,"Air Filters":3,"Battery":21,"Brakes":103,"Differentials":2,"Emissions & Inspections":193,"Engine":26,"Fluids & Cooling":23,"Fuel System":5,"Lighting":21,"Shop & Misc":287,"Suspension & Steering":8,"Tires":9,"Transmission":13,"Wiper Blades":23}},{"store_number":"8108","store_name":"American Lubefast #8108","brand":"American Lubefast","address":"621 Highway 43 S","city":"Saraland","state":"AL","zip":"36571","lat":30.805353,"lon":-88.071449,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":9,"Battery":5,"Brakes":33,"Differentials":6,"Emissions & Inspections":32,"Engine":20,"Fluids & Cooling":37,"Fuel System":5,"Lighting":9,"Shop & Misc":109,"Suspension & Steering":2,"Tires":4,"Transmission":16,"Wiper Blades":9}},{"store_number":"8109","store_name":"American Lubefast #8109","brand":"American Lubefast","address":"4630 Moffett RD","city":"Mobile","state":"AL","zip":"36618","lat":30.720239,"lon":-88.148691,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":4,"Battery":2,"Brakes":5,"Differentials":3,"Emissions & Inspections":15,"Engine":24,"Fluids & Cooling":4,"Fuel System":2,"Lighting":11,"Shop & Misc":63,"Tires":3,"Transmission":15,"Wiper Blades":10}},{"store_number":"8111","store_name":"Grease Monkey #8111","brand":"Grease Monkey","address":"1724 S Missouri Ave","city":"Clearwater","state":"FL","zip":"33756","lat":27.93411,"lon":-82.787935,"dma_code":"539","dma_name":"Tampa-St. Pete (Sarasota)","categories":{"Air Filters":6,"Battery":8,"Brakes":4,"Differentials":6,"Emissions & Inspections":1,"Engine":3,"Fluids & Cooling":20,"Lighting":8,"Shop & Misc":2,"Transmission":4,"Wiper Blades":20}},{"store_number":"8112","store_name":"Grease Monkey #8112","brand":"Grease Monkey","address":"5200 Park Blvd","city":"Pinellas Park","state":"FL","zip":"33781","lat":27.838878,"lon":-82.704253,"dma_code":"539","dma_name":"Tampa-St. Pete (Sarasota)","categories":{"Air Filters":9,"Battery":13,"Brakes":14,"Emissions & Inspections":14,"Engine":3,"Fluids & Cooling":11,"Fuel System":11,"Lighting":12,"Shop & Misc":25,"Wiper Blades":20}},{"store_number":"8113","store_name":"American Lubefast #8113","brand":"American Lubefast","address":"6865 Spanish Fort Blvd","city":"Spanish Fort","state":"AL","zip":"36527","lat":30.67146,"lon":-87.904538,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":6,"Battery":3,"Brakes":12,"Emissions & Inspections":33,"Engine":20,"Fluids & Cooling":8,"Fuel System":9,"Lighting":7,"Shop & Misc":38,"Tires":2,"Wiper Blades":17}},{"store_number":"8114","store_name":"Grease Monkey #8114","brand":"Grease Monkey","address":"384 State St","city":"North Haven","state":"CT","zip":"6473","lat":41.367066,"lon":-72.887987,"dma_code":"533","dma_name":"Hartford & New Haven","categories":{"Air Filters":9,"Battery":10,"Brakes":10,"Emissions & Inspections":57,"Fluids & Cooling":12,"Fuel System":5,"Lighting":31,"Shop & Misc":48,"Tires":2,"Transmission":8,"Wiper Blades":44}},{"store_number":"8115","store_name":"Grease Monkey #8115","brand":"Grease Monkey","address":"215 Thompson Dr","city":"Kerrville","state":"TX","zip":"78028","lat":30.04571,"lon":-99.146713,"dma_code":"641","dma_name":"San Antonio","categories":{"Air Filters":6,"Battery":11,"Brakes":68,"Differentials":2,"Emissions & Inspections":23,"Engine":8,"Fluids & Cooling":14,"Fuel System":3,"Lighting":9,"Shop & Misc":85,"Tires":15,"Wiper Blades":16}},{"store_number":"8116","store_name":"Grease Monkey #8116","brand":"Grease Monkey","address":"217 N Magnolia Ave","city":"Luling","state":"TX","zip":"78648","lat":29.683036,"lon":-97.647451,"dma_code":"635","dma_name":"Austin","categories":{"Air Filters":5,"Battery":3,"Brakes":25,"Differentials":1,"Emissions & Inspections":2,"Engine":7,"Fluids & Cooling":10,"Fuel System":13,"Lighting":6,"Shop & Misc":40,"Suspension & Steering":3,"Tires":2,"Transmission":2,"Wiper Blades":11}},{"store_number":"8117","store_name":"Grease Monkey #8117","brand":"Grease Monkey","address":"110 CM Allen Pkwy","city":"San Marcos","state":"TX","zip":"78666","lat":29.881145,"lon":-97.937402,"dma_code":"635","dma_name":"Austin","categories":{"Air Conditioning":2,"Air Filters":9,"Battery":8,"Brakes":51,"Differentials":5,"Emissions & Inspections":39,"Engine":10,"Fluids & Cooling":14,"Fuel System":10,"Lighting":23,"Shop & Misc":69,"Suspension & Steering":4,"Tires":9,"Transmission":9,"Wiper Blades":17}},{"store_number":"8118","store_name":"Grease Monkey #8118","brand":"Grease Monkey","address":"1519 E Sarah DeWitt Dr","city":"Gonzales","state":"TX","zip":"78629","lat":29.522042,"lon":-97.445009,"dma_code":"641","dma_name":"San Antonio","categories":{"Air Filters":6,"Battery":6,"Brakes":15,"Differentials":4,"Emissions & Inspections":49,"Fluids & Cooling":8,"Fuel System":11,"Lighting":2,"Shop & Misc":24,"Tires":1,"Transmission":4,"Wiper Blades":11}},{"store_number":"8119","store_name":"Grease Monkey #8119","brand":"Grease Monkey","address":"1512 N Spring St","city":"Beaver Dam","state":"WI","zip":"53916","lat":43.471786,"lon":-88.827333,"dma_code":"617","dma_name":"Milwaukee","categories":{"Air Filters":2,"Battery":5,"Brakes":1,"Engine":3,"Fluids & Cooling":66,"Fuel System":1,"Lighting":8,"Shop & Misc":47,"Wiper Blades":11}},{"store_number":"812","store_name":"Grease Monkey (ADI) #812","brand":"Grease Monkey (ADI)","address":"6140 Firestone Blvd.","city":"Firestone","state":"CO","zip":"80504","lat":40.160029,"lon":-104.937533,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":5,"Battery":3,"Brakes":2,"Differentials":4,"Engine":1,"Fluids & Cooling":8,"Fuel System":4,"Lighting":1,"Shop & Misc":15,"Tires":1,"Transmission":9,"Wiper Blades":5}},{"store_number":"8120","store_name":"Grease Monkey #8120","brand":"Grease Monkey","address":"1201 S. Main Street","city":"Rice Lake","state":"WI","zip":"54868","lat":45.487989,"lon":-91.732736,"dma_code":"613","dma_name":"Minneapolis-St. Paul","categories":{"Air Filters":4,"Battery":2,"Brakes":5,"Fluids & Cooling":3,"Fuel System":1,"Lighting":2,"Shop & Misc":7,"Wiper Blades":4}},{"store_number":"8122","store_name":"Kwik Kar #8122","brand":"Kwik Kar","address":"1209 West McDermott Drive","city":"Allen","state":"TX","zip":"75013","lat":33.099998,"lon":-96.696672,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":15,"Battery":26,"Brakes":60,"Differentials":2,"Emissions & Inspections":811,"Engine":36,"Fluids & Cooling":17,"Fuel System":9,"Lighting":28,"Shop & Misc":107,"Suspension & Steering":15,"Tires":8,"Transmission":4,"Wiper Blades":11}},{"store_number":"8123","store_name":"Kwik Kar #8123","brand":"Kwik Kar","address":"10101 Custer Road","city":"Plano","state":"TX","zip":"75025","lat":33.11726,"lon":-96.734244,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":3,"Air Filters":30,"Battery":13,"Brakes":20,"Emissions & Inspections":378,"Engine":20,"Fluids & Cooling":18,"Fuel System":13,"Lighting":11,"Shop & Misc":84,"Suspension & Steering":12,"Tires":16,"Wiper Blades":49}},{"store_number":"8124","store_name":"Kwik Kar #8124","brand":"Kwik Kar","address":"12961 Trinity Boulevard","city":"Euless","state":"TX","zip":"76040","lat":32.820333,"lon":-97.083811,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":7,"Battery":13,"Brakes":40,"Differentials":3,"Emissions & Inspections":147,"Engine":36,"Fluids & Cooling":18,"Fuel System":12,"Lighting":8,"Shop & Misc":56,"Suspension & Steering":1,"Tires":9,"Transmission":2,"Wiper Blades":31}},{"store_number":"8125","store_name":"Kwik Kar #8125","brand":"Kwik Kar","address":"4912 Main Street","city":"The Colony","state":"TX","zip":"75056","lat":33.079584,"lon":-96.89243,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":7,"Battery":14,"Brakes":13,"Differentials":2,"Emissions & Inspections":415,"Engine":28,"Fluids & Cooling":47,"Fuel System":1,"Lighting":22,"Shop & Misc":94,"Suspension & Steering":3,"Tires":32,"Transmission":6,"Wiper Blades":11}},{"store_number":"8126","store_name":"Kwik Kar #8126","brand":"Kwik Kar","address":"2960 North Beltline Road","city":"Irving","state":"TX","zip":"75062","lat":32.847139,"lon":-96.991847,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":10,"Battery":11,"Brakes":17,"Emissions & Inspections":138,"Engine":22,"Fluids & Cooling":10,"Fuel System":10,"Lighting":2,"Shop & Misc":30,"Transmission":2,"Wiper Blades":16}},{"store_number":"8127","store_name":"Kwik Kar #8127","brand":"Kwik Kar","address":"400 W. McDermott Drive","city":"Allen","state":"TX","zip":"75013","lat":33.10227,"lon":-96.673368,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":2,"Air Filters":12,"Battery":6,"Brakes":45,"Differentials":2,"Emissions & Inspections":732,"Engine":17,"Fluids & Cooling":21,"Fuel System":2,"Lighting":15,"Shop & Misc":73,"Suspension & Steering":2,"Tires":2,"Transmission":5,"Wiper Blades":48}},{"store_number":"8128","store_name":"Kwik Kar #8128","brand":"Kwik Kar","address":"17605 Fishtrap Road","city":"Prosper","state":"TX","zip":"75078","lat":33.230365,"lon":-96.858685,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":21,"Battery":53,"Brakes":92,"Differentials":5,"Emissions & Inspections":44,"Engine":44,"Fluids & Cooling":27,"Fuel System":8,"Lighting":26,"Shop & Misc":203,"Suspension & Steering":7,"Tires":13,"Transmission":13,"Wiper Blades":19}},{"store_number":"8129","store_name":"Kwik Kar #8129","brand":"Kwik Kar","address":"1880 and 1888 Esters Road","city":"Irving","state":"TX","zip":"75061","lat":32.832432,"lon":-97.009231,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":3,"Battery":4,"Brakes":41,"Differentials":2,"Emissions & Inspections":6,"Engine":17,"Fluids & Cooling":10,"Fuel System":13,"Lighting":5,"Shop & Misc":46,"Suspension & Steering":1,"Tires":3,"Transmission":2,"Wiper Blades":10}},{"store_number":"8131","store_name":"Kwik Kar #8131","brand":"Kwik Kar","address":"","city":"Sulphur Springs","state":"TX","zip":"75482","lat":33.126435,"lon":-95.600838,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":37,"Air Filters":13,"Battery":40,"Brakes":64,"Differentials":6,"Emissions & Inspections":26,"Engine":129,"Fluids & Cooling":48,"Fuel System":18,"Lighting":31,"Shop & Misc":223,"Suspension & Steering":12,"Tires":19,"Transmission":35,"Wiper Blades":30}},{"store_number":"8132","store_name":"Kwik Kar #8132","brand":"Kwik Kar","address":"6308 Preston Road","city":"Plano","state":"TX","zip":"75024","lat":33.059228,"lon":-96.795201,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":8,"Battery":24,"Brakes":40,"Differentials":2,"Emissions & Inspections":583,"Engine":26,"Fluids & Cooling":12,"Fuel System":2,"Lighting":18,"Shop & Misc":190,"Suspension & Steering":2,"Tires":49,"Transmission":2,"Wiper Blades":93}},{"store_number":"8133","store_name":"Kwik Kar #8133","brand":"Kwik Kar","address":"6614 Preston Road","city":"Frisco","state":"TX","zip":"75034","lat":33.133125,"lon":-96.803805,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":1,"Air Filters":7,"Battery":4,"Brakes":45,"Differentials":6,"Emissions & Inspections":338,"Engine":36,"Fluids & Cooling":23,"Fuel System":6,"Lighting":8,"Shop & Misc":72,"Suspension & Steering":5,"Tires":3,"Transmission":8,"Wiper Blades":19}},{"store_number":"8134","store_name":"Kwik Kar #8134","brand":"Kwik Kar","address":"9451 McArthur Boulevard","city":"Irving","state":"TX","zip":"75063","lat":32.933967,"lon":-96.952581,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":15,"Battery":25,"Brakes":20,"Differentials":1,"Emissions & Inspections":713,"Engine":21,"Fluids & Cooling":9,"Fuel System":1,"Lighting":16,"Shop & Misc":110,"Suspension & Steering":3,"Tires":6,"Transmission":5,"Wiper Blades":24}},{"store_number":"8135","store_name":"Kwik Kar #8135","brand":"Kwik Kar","address":"6830 Murphy Road","city":"Sachse","state":"TX","zip":"75048","lat":32.984147,"lon":-96.612788,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":2,"Air Filters":8,"Battery":9,"Brakes":24,"Emissions & Inspections":397,"Engine":21,"Fluids & Cooling":2,"Fuel System":4,"Lighting":5,"Shop & Misc":52,"Suspension & Steering":2,"Tires":1,"Transmission":3,"Wiper Blades":18}},{"store_number":"8136","store_name":"Kwik Kar #8136","brand":"Kwik Kar","address":"9721 Audelia Road","city":"Dallas","state":"TX","zip":"75238","lat":32.879637,"lon":-96.718281,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":9,"Battery":10,"Brakes":34,"Emissions & Inspections":301,"Engine":7,"Fluids & Cooling":5,"Fuel System":7,"Lighting":8,"Shop & Misc":80,"Suspension & Steering":1,"Tires":5,"Wiper Blades":20}},{"store_number":"8137","store_name":"Kwik Kar #8137","brand":"Kwik Kar","address":"810 West Buckingham Road","city":"Garland","state":"TX","zip":"75040","lat":32.930678,"lon":-96.639859,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":4,"Air Filters":20,"Battery":19,"Brakes":104,"Differentials":15,"Emissions & Inspections":663,"Engine":58,"Fluids & Cooling":24,"Lighting":47,"Shop & Misc":191,"Suspension & Steering":10,"Tires":7,"Transmission":32,"Wiper Blades":46}},{"store_number":"8138","store_name":"Kwik Kar #8138","brand":"Kwik Kar","address":"687 W. Campbell Road","city":"Richardson","state":"TX","zip":"75080","lat":32.977825,"lon":-96.74388,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":28,"Battery":33,"Brakes":46,"Emissions & Inspections":655,"Engine":8,"Fluids & Cooling":10,"Fuel System":8,"Lighting":21,"Shop & Misc":83,"Suspension & Steering":2,"Tires":12,"Transmission":10,"Wiper Blades":34}},{"store_number":"8139","store_name":"Kwik Kar Oil Change & Auto Care #8139","brand":"Kwik Kar","address":"7100 Justin Road","city":"Lantana","state":"TX","zip":"76226","lat":33.072705,"lon":-97.111794,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":8,"Air Filters":17,"Battery":49,"Brakes":90,"Differentials":7,"Emissions & Inspections":428,"Engine":55,"Fluids & Cooling":54,"Fuel System":6,"Lighting":20,"Shop & Misc":257,"Suspension & Steering":1,"Tires":31,"Transmission":8,"Wiper Blades":58}},{"store_number":"8140","store_name":"Kwik Kar Oil Change & Auto Care #8140","brand":"Kwik Kar","address":"2212 Long Prairie Road","city":"Flower Mound","state":"TX","zip":"75022","lat":33.016524,"lon":-97.070152,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":8,"Air Filters":7,"Battery":39,"Brakes":16,"Differentials":3,"Emissions & Inspections":303,"Engine":12,"Fluids & Cooling":14,"Fuel System":6,"Lighting":17,"Shop & Misc":74,"Tires":8,"Transmission":16,"Wiper Blades":14}},{"store_number":"8141","store_name":"Grease Monkey #8141","brand":"Grease Monkey","address":"7118 Highway 613","city":"Moss Point","state":"MS","zip":"39563","lat":30.44489,"lon":-88.542248,"dma_code":"746","dma_name":"Biloxi-Gulfport","categories":{"Air Filters":21,"Battery":6,"Brakes":19,"Emissions & Inspections":25,"Engine":21,"Fluids & Cooling":9,"Fuel System":9,"Lighting":11,"Shop & Misc":41,"Tires":4,"Transmission":2,"Wiper Blades":36}},{"store_number":"8142","store_name":"Grease Monkey #8142","brand":"Grease Monkey","address":"3263 Highway 90","city":"Gautier","state":"MS","zip":"39553","lat":30.393109,"lon":-88.66296,"dma_code":"746","dma_name":"Biloxi-Gulfport","categories":{"Air Filters":21,"Battery":7,"Brakes":49,"Differentials":2,"Emissions & Inspections":50,"Engine":16,"Fluids & Cooling":10,"Fuel System":7,"Lighting":17,"Shop & Misc":105,"Tires":2,"Transmission":8,"Wiper Blades":75}},{"store_number":"8143","store_name":"Kwik Kar #8143","brand":"Kwik Kar","address":"134 East Ovilla Road","city":"Red Oak","state":"TX","zip":"75154","lat":32.53208,"lon":-96.813028,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":7,"Air Filters":21,"Battery":26,"Brakes":34,"Differentials":4,"Emissions & Inspections":962,"Engine":64,"Fluids & Cooling":28,"Fuel System":10,"Lighting":39,"Shop & Misc":117,"Suspension & Steering":2,"Tires":13,"Transmission":27,"Wiper Blades":72}},{"store_number":"8144","store_name":"Kwik Kar #8144","brand":"Kwik Kar","address":"2308 West Ennis","city":"Ennis","state":"TX","zip":"75119","lat":32.320185,"lon":-96.648949,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":3,"Air Filters":13,"Battery":25,"Brakes":42,"Emissions & Inspections":875,"Engine":50,"Fluids & Cooling":18,"Fuel System":1,"Lighting":13,"Shop & Misc":90,"Suspension & Steering":8,"Tires":5,"Transmission":18,"Wiper Blades":51}},{"store_number":"8145","store_name":"Kwik Kar #8145","brand":"Kwik Kar","address":"2581 Horizon Road","city":"Rockwall","state":"TX","zip":"75032","lat":32.890314,"lon":-96.469006,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":1,"Air Filters":12,"Battery":18,"Brakes":77,"Differentials":4,"Emissions & Inspections":1612,"Engine":52,"Fluids & Cooling":15,"Fuel System":9,"Lighting":17,"Shop & Misc":126,"Suspension & Steering":4,"Tires":8,"Transmission":17,"Wiper Blades":94}},{"store_number":"8146","store_name":"Kwik Kar #8146","brand":"Kwik Kar","address":"1200 14th Street","city":"Plano","state":"TX","zip":"75054","lat":33.01803,"lon":-96.697339,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":8,"Battery":9,"Brakes":15,"Differentials":2,"Emissions & Inspections":203,"Engine":5,"Fluids & Cooling":7,"Lighting":6,"Shop & Misc":77,"Suspension & Steering":5,"Tires":8,"Wiper Blades":19}},{"store_number":"8147","store_name":"Grease Monkey #8147","brand":"Grease Monkey","address":"6815 Washington AVE","city":"Ocean Springs","state":"MS","zip":"39564","lat":30.439775,"lon":-88.835636,"dma_code":"746","dma_name":"Biloxi-Gulfport","categories":{"Air Filters":19,"Battery":16,"Brakes":20,"Differentials":6,"Emissions & Inspections":2,"Engine":8,"Fluids & Cooling":8,"Fuel System":4,"Lighting":10,"Shop & Misc":53,"Tires":2,"Transmission":4,"Wiper Blades":18}},{"store_number":"8148","store_name":"Kwik Kar #8148","brand":"Kwik Kar","address":"415 W California Street","city":"Gainesville","state":"TX","zip":"76240","lat":33.624626,"lon":-97.148715,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Conditioning":13,"Air Filters":6,"Battery":20,"Brakes":18,"Differentials":3,"Emissions & Inspections":8,"Engine":29,"Fluids & Cooling":19,"Fuel System":5,"Lighting":18,"Shop & Misc":104,"Suspension & Steering":8,"Tires":33,"Transmission":6,"Wiper Blades":19}},{"store_number":"8149","store_name":"SpeeDee Oil Change & Auto Service #8149","brand":"SpeeDee","address":"","city":"Allen","state":"TX","zip":"75002","lat":33.089587,"lon":-96.607767,"dma_code":"623","dma_name":"Dallas-Ft. Worth","categories":{"Air Filters":64,"Battery":45,"Brakes":64,"Emissions & Inspections":506,"Engine":22,"Fluids & Cooling":5,"Fuel System":5,"Lighting":25,"Shop & Misc":131,"Suspension & Steering":3,"Tires":89,"Transmission":6,"Wiper Blades":55}},{"store_number":"8152","store_name":"Grease Monkey #8152","brand":"Grease Monkey","address":"1674 Market Drive","city":"Stillwater","state":"MN","zip":"55082","lat":45.041221,"lon":-92.840388,"dma_code":"613","dma_name":"Minneapolis-St. Paul","categories":{"Brakes":1,"Lighting":1,"Shop & Misc":3,"Wiper Blades":1}},{"store_number":"8153","store_name":"Grease Monkey #8153","brand":"Grease Monkey","address":"1680 W. Court St.","city":"Kankakee","state":"IL","zip":"60901","lat":41.121058,"lon":-87.88828,"dma_code":"602","dma_name":"Chicago","categories":{"Air Conditioning":2,"Air Filters":5,"Battery":10,"Brakes":21,"Engine":6,"Fluids & Cooling":2,"Lighting":11,"Shop & Misc":26,"Wiper Blades":6}},{"store_number":"8163","store_name":"Grease Monkey #8163","brand":"Grease Monkey","address":"2010 E. Belvidere Rd.","city":"Grayslake","state":"IL","zip":"60030","lat":42.339581,"lon":-87.999687,"dma_code":"602","dma_name":"Chicago","categories":{"Air Filters":4,"Battery":5,"Brakes":15,"Engine":1,"Fluids & Cooling":4,"Lighting":7,"Shop & Misc":45,"Suspension & Steering":1,"Tires":15,"Wiper Blades":14}},{"store_number":"8165","store_name":"Grease Monkey #8165","brand":"Grease Monkey","address":"42011 N. Gavilan Peak Pkwy.","city":"Anthem","state":"AZ","zip":"85086","lat":33.865825,"lon":-112.134448,"dma_code":"753","dma_name":"Phoenix (Prescott)","categories":{"Air Conditioning":6,"Air Filters":6,"Brakes":22,"Engine":21,"Fluids & Cooling":21,"Fuel System":8,"Lighting":6,"Shop & Misc":45,"Suspension & Steering":5,"Tires":2,"Transmission":4,"Wiper Blades":3}},{"store_number":"8203","store_name":"Grease Monkey #8203","brand":"Grease Monkey","address":"808 Willowbrook DR","city":"Hinesville","state":"GA","zip":"31313","lat":31.830474,"lon":-81.617082,"dma_code":"507","dma_name":"Savannah","categories":{"Air Filters":8,"Battery":2,"Brakes":12,"Emissions & Inspections":56,"Engine":1,"Fluids & Cooling":10,"Fuel System":4,"Lighting":24,"Shop & Misc":29,"Wiper Blades":8}},{"store_number":"8204","store_name":"American Lubefast #8204","brand":"American Lubefast","address":"442 S 1ST ST","city":"Jesup","state":"GA","zip":"31545","lat":31.603888,"lon":-81.889467,"dma_code":"507","dma_name":"Savannah","categories":{"Air Conditioning":2,"Air Filters":11,"Battery":4,"Brakes":17,"Emissions & Inspections":152,"Engine":5,"Fluids & Cooling":23,"Fuel System":1,"Lighting":24,"Shop & Misc":70,"Tires":8,"Transmission":4,"Wiper Blades":11}},{"store_number":"8205","store_name":"American Lubefast #8205","brand":"American Lubefast","address":"757 Highway 96","city":"Bonaire","state":"GA","zip":"31005","lat":32.555212,"lon":-83.659947,"dma_code":"503","dma_name":"Macon","categories":{"Air Conditioning":1,"Air Filters":12,"Battery":16,"Brakes":78,"Differentials":6,"Emissions & Inspections":28,"Engine":31,"Fluids & Cooling":27,"Fuel System":34,"Lighting":7,"Shop & Misc":80,"Suspension & Steering":1,"Transmission":21,"Wiper Blades":5}},{"store_number":"8208","store_name":"American Lubefast #8208","brand":"American Lubefast","address":"1304 Washington ST","city":"Perry","state":"GA","zip":"31069","lat":32.465752,"lon":-83.737176,"dma_code":"503","dma_name":"Macon","categories":{"Air Filters":17,"Battery":2,"Brakes":6,"Emissions & Inspections":31,"Engine":4,"Fluids & Cooling":12,"Lighting":9,"Shop & Misc":12,"Wiper Blades":13}},{"store_number":"8210","store_name":"American Lubefast #8210","brand":"American Lubefast","address":"3946 Northside DR","city":"Macon","state":"GA","zip":"31210","lat":32.898523,"lon":-83.699663,"dma_code":"503","dma_name":"Macon","categories":{"Air Filters":4,"Battery":6,"Brakes":31,"Differentials":2,"Emissions & Inspections":2,"Engine":12,"Fluids & Cooling":3,"Fuel System":2,"Lighting":21,"Shop & Misc":109,"Tires":3,"Transmission":4,"Wiper Blades":8}},{"store_number":"8211","store_name":"American Lubefast #8211","brand":"American Lubefast","address":"701 Memorial DR","city":"Waycross","state":"GA","zip":"31501","lat":31.211538,"lon":-82.349991,"dma_code":"561","dma_name":"Jacksonville","categories":{"Air Filters":19,"Battery":1,"Brakes":7,"Emissions & Inspections":7,"Engine":1,"Fluids & Cooling":6,"Fuel System":9,"Lighting":3,"Shop & Misc":14,"Wiper Blades":21}},{"store_number":"8251","store_name":"Grease Monkey #8251","brand":"Grease Monkey","address":"234 Fairview RD","city":"Ellenwood","state":"GA","zip":"30294","lat":33.619418,"lon":-84.243951,"dma_code":"524","dma_name":"Atlanta","categories":{"Air Filters":11,"Battery":4,"Brakes":18,"Emissions & Inspections":87,"Engine":8,"Fluids & Cooling":48,"Fuel System":9,"Lighting":41,"Shop & Misc":46,"Tires":3,"Wiper Blades":23}},{"store_number":"826","store_name":"Grease Monkey #826","brand":"Grease Monkey","address":"10352 S. Beckstead Lane","city":"South Jordan","state":"UT","zip":"84095","lat":40.563309,"lon":-111.936296,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":61,"Battery":4,"Brakes":17,"Differentials":5,"Emissions & Inspections":939,"Engine":1,"Fluids & Cooling":16,"Fuel System":2,"Lighting":42,"Shop & Misc":52,"Tires":16,"Wiper Blades":106}},{"store_number":"8301","store_name":"American Lubefast #8301","brand":"American Lubefast","address":"1901 E Olive RD","city":"Pensacola","state":"FL","zip":"32514","lat":30.509882,"lon":-87.220056,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":4,"Battery":13,"Brakes":30,"Emissions & Inspections":16,"Engine":17,"Fluids & Cooling":17,"Fuel System":2,"Lighting":19,"Shop & Misc":77,"Tires":12,"Transmission":12,"Wiper Blades":16}},{"store_number":"8303","store_name":"American Lubefast #8303","brand":"American Lubefast","address":"798 N Navy Blvd","city":"Pensacola","state":"FL","zip":"32507","lat":30.400587,"lon":-87.27698,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":2,"Battery":8,"Differentials":8,"Emissions & Inspections":5,"Engine":1,"Fluids & Cooling":22,"Fuel System":12,"Lighting":20,"Shop & Misc":21,"Transmission":12,"Wiper Blades":16}},{"store_number":"8304","store_name":"American Lubefast #8304","brand":"American Lubefast","address":"305 E Nine Mile RD","city":"Pensacola","state":"FL","zip":"32514","lat":30.532457,"lon":-87.261504,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":2,"Battery":4,"Brakes":13,"Differentials":5,"Emissions & Inspections":5,"Engine":14,"Fluids & Cooling":13,"Lighting":8,"Shop & Misc":61,"Tires":4,"Transmission":7,"Wiper Blades":16}},{"store_number":"8305","store_name":"American Lubefast #8305","brand":"American Lubefast","address":"6220 Highway 90","city":"Milton","state":"FL","zip":"32570","lat":30.60711,"lon":-87.063488,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":9,"Battery":4,"Brakes":15,"Differentials":6,"Emissions & Inspections":13,"Engine":2,"Fluids & Cooling":4,"Fuel System":6,"Lighting":6,"Shop & Misc":40,"Tires":4,"Transmission":16,"Wiper Blades":6}},{"store_number":"8306","store_name":"American Lubefast #8306","brand":"American Lubefast","address":"197 Gulf Breeze Pkwy","city":"Gulf Breeze","state":"FL","zip":"32561","lat":30.367443,"lon":-87.172737,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":1,"Battery":9,"Brakes":2,"Differentials":9,"Emissions & Inspections":20,"Engine":7,"Fluids & Cooling":32,"Fuel System":2,"Lighting":13,"Shop & Misc":12,"Transmission":8,"Wiper Blades":8}},{"store_number":"8307","store_name":"American Lubefast #8307","brand":"American Lubefast","address":"6032 N 9TH AVE","city":"Pensacola","state":"FL","zip":"32504","lat":30.485485,"lon":-87.199845,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":4,"Battery":3,"Brakes":2,"Differentials":9,"Emissions & Inspections":16,"Engine":3,"Fluids & Cooling":17,"Fuel System":5,"Lighting":9,"Shop & Misc":10,"Transmission":4,"Wiper Blades":4}},{"store_number":"8308","store_name":"American Lubefast #8308","brand":"American Lubefast","address":"6030 9th","city":"Pensacola","state":"FL","zip":"32526","lat":30.493102,"lon":-87.359621,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":9,"Battery":12,"Brakes":57,"Emissions & Inspections":57,"Engine":23,"Fluids & Cooling":21,"Lighting":14,"Shop & Misc":87,"Tires":1,"Transmission":16,"Wiper Blades":15}},{"store_number":"8321","store_name":"Grease Monkey #8321","brand":"Grease Monkey","address":"1102 S Ferdon Blvd","city":"Crestview","state":"FL","zip":"32536","lat":30.748651,"lon":-86.5639,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":6,"Battery":10,"Brakes":35,"Differentials":2,"Emissions & Inspections":28,"Engine":6,"Fluids & Cooling":9,"Fuel System":3,"Lighting":18,"Shop & Misc":63,"Tires":3,"Transmission":14,"Wiper Blades":10}},{"store_number":"8331","store_name":"American Lubefast #8331","brand":"American Lubefast","address":"1520 Vucovich DR","city":"Niceville","state":"FL","zip":"32578","lat":30.483016,"lon":-86.41531,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":11,"Battery":15,"Brakes":10,"Differentials":14,"Emissions & Inspections":7,"Engine":9,"Fluids & Cooling":8,"Fuel System":5,"Lighting":12,"Shop & Misc":30,"Transmission":19,"Wiper Blades":18}},{"store_number":"8341","store_name":"Grease Monkey #8341","brand":"Grease Monkey","address":"9492 Navarre Pkwy","city":"Navarre","state":"FL","zip":"32566","lat":30.410067,"lon":-86.825542,"dma_code":"686","dma_name":"Mobile-Pensacola (Ft Walt)","categories":{"Air Filters":2,"Battery":2,"Brakes":7,"Differentials":11,"Emissions & Inspections":4,"Engine":6,"Fluids & Cooling":31,"Fuel System":6,"Lighting":6,"Shop & Misc":19,"Transmission":10,"Wiper Blades":5}},{"store_number":"8411","store_name":"American Lubefast #8411","brand":"American Lubefast","address":"2829 E Pinetree Blvd","city":"Thomasville","state":"GA","zip":"31792","lat":30.853245,"lon":-83.951358,"dma_code":"530","dma_name":"Tallahassee-Thomasville","categories":{"Air Filters":19,"Battery":1,"Emissions & Inspections":41,"Engine":21,"Fluids & Cooling":8,"Fuel System":2,"Lighting":169,"Shop & Misc":8,"Transmission":4,"Wiper Blades":182}},{"store_number":"8421","store_name":"American Lubefast #8421","brand":"American Lubefast","address":"808 1st AVE SE","city":"Moultrie","state":"GA","zip":"31768","lat":31.178537,"lon":-83.778828,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":10,"Battery":1,"Differentials":3,"Engine":13,"Fuel System":1,"Lighting":30,"Shop & Misc":10,"Transmission":8,"Wiper Blades":24}},{"store_number":"8441","store_name":"American Lubefast #8441","brand":"American Lubefast","address":"829 E Shotwell ST","city":"Bainbridge","state":"GA","zip":"39819","lat":30.904116,"lon":-84.567234,"dma_code":"530","dma_name":"Tallahassee-Thomasville","categories":{"Air Filters":2,"Battery":4,"Brakes":6,"Emissions & Inspections":41,"Engine":9,"Fluids & Cooling":24,"Fuel System":6,"Lighting":20,"Shop & Misc":30,"Tires":3,"Transmission":4,"Wiper Blades":20}},{"store_number":"8481","store_name":"American Lubefast #8481","brand":"American Lubefast","address":"813  2ND ST W","city":"Tifton","state":"GA","zip":"31794","lat":31.45832,"lon":-83.526199,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Conditioning":4,"Air Filters":2,"Battery":2,"Brakes":30,"Differentials":1,"Emissions & Inspections":8,"Engine":33,"Fluids & Cooling":14,"Lighting":7,"Shop & Misc":77,"Suspension & Steering":1,"Transmission":19,"Wiper Blades":5}},{"store_number":"8482","store_name":"American Lubefast #8482","brand":"American Lubefast","address":"1801 Tift AVE N","city":"Tifton","state":"GA","zip":"31794","lat":31.470935,"lon":-83.5027,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":5,"Battery":2,"Emissions & Inspections":13,"Engine":1,"Fluids & Cooling":4,"Lighting":5,"Shop & Misc":7,"Tires":2,"Wiper Blades":19}},{"store_number":"8491","store_name":"American Lubefast #8491","brand":"American Lubefast","address":"2125 N Ashley ST","city":"Valdosta","state":"GA","zip":"31602","lat":30.858199,"lon":-83.281206,"dma_code":"530","dma_name":"Tallahassee-Thomasville","categories":{"Air Filters":18,"Battery":5,"Brakes":3,"Differentials":4,"Emissions & Inspections":118,"Engine":20,"Fluids & Cooling":52,"Fuel System":2,"Lighting":16,"Shop & Misc":61,"Suspension & Steering":2,"Transmission":22,"Wiper Blades":20}},{"store_number":"8492","store_name":"American Lubefast #8492","brand":"American Lubefast","address":"107 E Northside DR","city":"Valdosta","state":"GA","zip":"31602","lat":30.869478,"lon":-83.290203,"dma_code":"530","dma_name":"Tallahassee-Thomasville","categories":{"Air Filters":4,"Battery":1,"Brakes":7,"Differentials":6,"Emissions & Inspections":80,"Engine":8,"Fluids & Cooling":49,"Fuel System":9,"Lighting":14,"Shop & Misc":46,"Transmission":21,"Wiper Blades":14}},{"store_number":"8531","store_name":"American Lubefast #8531","brand":"American Lubefast","address":"2420 Dawson RD","city":"Albany","state":"GA","zip":"31707","lat":31.609721,"lon":-84.211396,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":33,"Battery":5,"Brakes":41,"Differentials":2,"Emissions & Inspections":61,"Engine":16,"Fluids & Cooling":16,"Fuel System":19,"Lighting":90,"Shop & Misc":80,"Tires":7,"Transmission":18,"Wiper Blades":35}},{"store_number":"8532","store_name":"American Lubefast #8532","brand":"American Lubefast","address":"2311 N Slappey Blvd","city":"Albany","state":"GA","zip":"31701","lat":31.608284,"lon":-84.176377,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":6,"Battery":2,"Brakes":4,"Differentials":2,"Emissions & Inspections":35,"Engine":6,"Fluids & Cooling":15,"Fuel System":1,"Lighting":8,"Shop & Misc":40,"Tires":1,"Transmission":2,"Wiper Blades":11}},{"store_number":"8533","store_name":"American Lubefast #8533","brand":"American Lubefast","address":"2413 Sylvester HWY","city":"Albany","state":"GA","zip":"31705","lat":31.57483,"lon":-84.094104,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":8,"Emissions & Inspections":2,"Lighting":1,"Wiper Blades":15}},{"store_number":"8535","store_name":"American Lubefast #8535","brand":"American Lubefast","address":"1608 US Highway 19 S UNIT B","city":"Leesburg","state":"GA","zip":"31763","lat":31.628757,"lon":-84.177605,"dma_code":"525","dma_name":"Albany, GA","categories":{"Air Filters":8,"Battery":2,"Brakes":27,"Differentials":1,"Emissions & Inspections":24,"Engine":48,"Fluids & Cooling":10,"Lighting":18,"Shop & Misc":48,"Tires":1,"Wiper Blades":28}},{"store_number":"8601","store_name":"Grease Monkey #8601","brand":"Grease Monkey","address":"4784 US Highway 231","city":"Wetumpka","state":"AL","zip":"36092","lat":32.510898,"lon":-86.212854,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":13,"Battery":2,"Differentials":2,"Emissions & Inspections":182,"Engine":4,"Fluids & Cooling":27,"Lighting":15,"Shop & Misc":14,"Tires":2,"Transmission":1,"Wiper Blades":15}},{"store_number":"8602","store_name":"American Lubefast #8602","brand":"American Lubefast","address":"2670 Taylor RD","city":"Montgomery","state":"AL","zip":"36117","lat":32.340915,"lon":-86.179961,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":15,"Battery":3,"Brakes":2,"Emissions & Inspections":4,"Engine":8,"Fluids & Cooling":3,"Fuel System":1,"Lighting":4,"Shop & Misc":14,"Transmission":2,"Wiper Blades":11}},{"store_number":"8603","store_name":"American Lubefast #8603","brand":"American Lubefast","address":"2001 Carter Hill RD","city":"Montgomery","state":"AL","zip":"36106","lat":32.358752,"lon":-86.282924,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":9,"Differentials":2,"Emissions & Inspections":16,"Engine":1,"Fluids & Cooling":8,"Fuel System":1,"Lighting":4,"Shop & Misc":1,"Wiper Blades":12}},{"store_number":"8605","store_name":"Grease Monkey #8605","brand":"Grease Monkey","address":"1672 East Main St","city":"Prattville","state":"AL","zip":"36066","lat":32.460035,"lon":-86.426419,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Conditioning":2,"Air Filters":5,"Battery":4,"Brakes":4,"Emissions & Inspections":81,"Engine":11,"Fluids & Cooling":31,"Fuel System":7,"Lighting":19,"Shop & Misc":32,"Tires":3,"Transmission":2,"Wiper Blades":4}},{"store_number":"8606","store_name":"American Lubefast #8606","brand":"American Lubefast","address":"2526 Fisk RD","city":"Montgomery","state":"AL","zip":"36111","lat":32.337214,"lon":-86.261296,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":20,"Battery":2,"Emissions & Inspections":2,"Engine":3,"Fluids & Cooling":29,"Fuel System":2,"Lighting":17,"Shop & Misc":9,"Wiper Blades":15}},{"store_number":"8607","store_name":"American Lubefast #8607","brand":"American Lubefast","address":"2701 Bell RD","city":"Montgomery","state":"AL","zip":"36117","lat":32.341339,"lon":-86.19495,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":2,"Emissions & Inspections":32,"Engine":1,"Fluids & Cooling":10,"Lighting":1,"Shop & Misc":2,"Wiper Blades":8}},{"store_number":"8608","store_name":"American Lubefast #8608","brand":"American Lubefast","address":"5701 Atlanta HWY","city":"Montgomery","state":"AL","zip":"36117","lat":32.382466,"lon":-86.203513,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Filters":8,"Differentials":2,"Emissions & Inspections":45,"Fluids & Cooling":7,"Lighting":3,"Shop & Misc":2,"Wiper Blades":14}},{"store_number":"8611","store_name":"American Lubefast #8611","brand":"American Lubefast","address":"3580 Highway 14","city":"Millbrook","state":"AL","zip":"36054","lat":32.514651,"lon":-86.377532,"dma_code":"698","dma_name":"Montgomery-Selma","categories":{"Air Conditioning":2,"Air Filters":5,"Battery":6,"Brakes":17,"Differentials":4,"Emissions & Inspections":54,"Engine":34,"Fluids & Cooling":13,"Fuel System":1,"Lighting":16,"Shop & Misc":40,"Tires":1,"Transmission":15,"Wiper Blades":9}},{"store_number":"868","store_name":"Grease Monkey (ADI) #868","brand":"Grease Monkey (ADI)","address":"13662 Colorado Blvd.","city":"Thornton","state":"CO","zip":"80602","lat":39.944416,"lon":-104.93971,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":2,"Battery":4,"Brakes":4,"Differentials":2,"Engine":1,"Fluids & Cooling":7,"Fuel System":2,"Lighting":11,"Shop & Misc":14,"Suspension & Steering":1,"Tires":2,"Wiper Blades":9}},{"store_number":"8703","store_name":"American Lubefast #8703","brand":"American Lubefast","address":"2211 Ross Clark CIR","city":"Dothan","state":"AL","zip":"36301","lat":31.190773,"lon":-85.403882,"dma_code":"606","dma_name":"Dothan","categories":{"Air Conditioning":4,"Air Filters":9,"Brakes":22,"Differentials":2,"Emissions & Inspections":6,"Engine":12,"Fluids & Cooling":8,"Fuel System":6,"Lighting":26,"Shop & Misc":42,"Transmission":8,"Wiper Blades":12}},{"store_number":"8711","store_name":"American Lubefast #8711","brand":"American Lubefast","address":"4703 Highway 90","city":"Marianna","state":"FL","zip":"32446","lat":30.766374,"lon":-85.203833,"dma_code":"656","dma_name":"Panama City","categories":{"Air Filters":3,"Differentials":6,"Emissions & Inspections":1,"Engine":1,"Fluids & Cooling":12,"Fuel System":2,"Lighting":9,"Shop & Misc":7,"Transmission":2,"Wiper Blades":8}},{"store_number":"8712","store_name":"Grease Monkey #8712","brand":"Grease Monkey","address":"340 N Tyndall Pkwy","city":"Panama City","state":"FL","zip":"32404","lat":30.154471,"lon":-85.59081,"dma_code":"656","dma_name":"Panama City","categories":{"Battery":2,"Brakes":30,"Differentials":9,"Emissions & Inspections":39,"Engine":3,"Fluids & Cooling":34,"Fuel System":4,"Lighting":15,"Shop & Misc":43,"Tires":3,"Transmission":12,"Wiper Blades":18}},{"store_number":"8801","store_name":"American Lubefast #8801","brand":"American Lubefast","address":"1515 E Glenn AVE","city":"Auburn","state":"AL","zip":"36830","lat":32.609356,"lon":-85.449485,"dma_code":"522","dma_name":"Columbus, GA (Opelika, AL)","categories":{"Air Filters":7,"Battery":5,"Emissions & Inspections":15,"Engine":14,"Fluids & Cooling":15,"Fuel System":1,"Lighting":11,"Shop & Misc":9,"Wiper Blades":9}},{"store_number":"8802","store_name":"American Lubefast #8802","brand":"American Lubefast","address":"2700 Pepperell Pkwy","city":"Opelika","state":"AL","zip":"36801","lat":32.637193,"lon":-85.416245,"dma_code":"522","dma_name":"Columbus, GA (Opelika, AL)","categories":{"Air Filters":5,"Battery":1,"Brakes":2,"Differentials":1,"Emissions & Inspections":28,"Lighting":4,"Shop & Misc":12,"Suspension & Steering":1,"Tires":3,"Wiper Blades":18}},{"store_number":"888","store_name":"Grease Monkey #888","brand":"Grease Monkey","address":"2626 S Timberline Rd","city":"Ft. Collins","state":"CO","zip":"80525","lat":40.550053,"lon":-105.037235,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":9,"Battery":6,"Brakes":4,"Differentials":7,"Emissions & Inspections":16,"Engine":1,"Fluids & Cooling":27,"Fuel System":6,"Lighting":29,"Shop & Misc":28,"Tires":6,"Transmission":7,"Wiper Blades":16}},{"store_number":"922","store_name":"Grease Monkey #922","brand":"Grease Monkey","address":"18550 Hwy 105 W","city":"Montgomery","state":"TX","zip":"77356","lat":30.381684,"lon":-95.648974,"dma_code":"618","dma_name":"Houston","categories":{"Air Conditioning":2,"Air Filters":145,"Battery":25,"Brakes":57,"Emissions & Inspections":849,"Engine":14,"Fluids & Cooling":24,"Fuel System":27,"Lighting":17,"Shop & Misc":76,"Suspension & Steering":1,"Tires":16,"Transmission":2,"Wiper Blades":15}},{"store_number":"936","store_name":"Grease Monkey (ADI) #936","brand":"Grease Monkey (ADI)","address":"4114 E. Bromley Lane","city":"Brighton","state":"CO","zip":"80601","lat":39.971937,"lon":-104.768666,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":6,"Battery":2,"Brakes":8,"Differentials":6,"Engine":2,"Fluids & Cooling":8,"Fuel System":3,"Lighting":2,"Shop & Misc":34,"Tires":3,"Transmission":22,"Wiper Blades":8}},{"store_number":"937","store_name":"Grease Monkey (ADI) #937","brand":"Grease Monkey (ADI)","address":"1160 Dexter St.","city":"Ft. Lupton","state":"CO","zip":"80621","lat":40.078672,"lon":-104.80432,"dma_code":"751","dma_name":"Denver","categories":{"Engine":1,"Lighting":1,"Shop & Misc":2,"Tires":1}},{"store_number":"951","store_name":"Grease Monkey #951","brand":"Grease Monkey","address":"55 W Parrish Lane","city":"Centerville","state":"UT","zip":"84014","lat":40.921157,"lon":-111.879934,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":10,"Battery":14,"Brakes":77,"Differentials":10,"Emissions & Inspections":2535,"Engine":15,"Fluids & Cooling":25,"Fuel System":2,"Lighting":10,"Shop & Misc":112,"Tires":5,"Transmission":14,"Wiper Blades":25}},{"store_number":"967","store_name":"Grease Monkey #967","brand":"Grease Monkey","address":"1362 Timpanogos Hwy","city":"Lehi","state":"UT","zip":"84043","lat":40.39162,"lon":-111.85077,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":4,"Battery":24,"Brakes":37,"Differentials":2,"Emissions & Inspections":2662,"Engine":24,"Fluids & Cooling":32,"Fuel System":11,"Lighting":31,"Shop & Misc":103,"Suspension & Steering":8,"Tires":9,"Transmission":24,"Wiper Blades":39}},{"store_number":"972","store_name":"Grease Monkey #972","brand":"Grease Monkey","address":"2928 S. Glen Eagle Dr","city":"West Valley City","state":"UT","zip":"84128","lat":40.70687,"lon":-112.026289,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Conditioning":4,"Air Filters":9,"Battery":8,"Brakes":4,"Differentials":4,"Emissions & Inspections":239,"Engine":5,"Fluids & Cooling":26,"Fuel System":5,"Lighting":11,"Shop & Misc":24,"Tires":2,"Transmission":6,"Wiper Blades":11}},{"store_number":"981","store_name":"Grease Monkey (ADI) #981","brand":"Grease Monkey (ADI)","address":"1527 Peoria Street","city":"Aurora","state":"CO","zip":"80010","lat":39.740677,"lon":-104.847235,"dma_code":"751","dma_name":"Denver","categories":{"Air Filters":5,"Battery":3,"Brakes":2,"Differentials":7,"Engine":2,"Fluids & Cooling":7,"Fuel System":6,"Lighting":7,"Shop & Misc":15,"Transmission":6,"Wiper Blades":10}},{"store_number":"987","store_name":"Grease Monkey #987","brand":"Grease Monkey","address":"3668 W. 11400 S","city":"South Jordan","state":"UT","zip":"84095","lat":40.544618,"lon":-111.978507,"dma_code":"770","dma_name":"Salt Lake City","categories":{"Air Filters":19,"Battery":15,"Brakes":63,"Differentials":4,"Emissions & Inspections":1083,"Engine":7,"Fluids & Cooling":146,"Fuel System":6,"Lighting":22,"Shop & Misc":81,"Tires":4,"Transmission":10,"Wiper Blades":67}}],"l1_categories":["Air Conditioning","Air Filters","Battery","Brakes","Differentials","Emissions & Inspections","Engine","Fluids & Cooling","Fuel System","Lighting","Shop & Misc","Suspension & Steering","Tires","Transmission","Wiper Blades"],"brands":["American Lubefast","Economy Oil Change","Grease Monkey","Grease Monkey (ADI)","Herbert Automotive","Kwik Kar","SpeeDee","Uncle Ed's"],"states":["AL","AZ","CO","CT","FL","GA","IL","IN","LA","MD","MI","MN","MO","MS","NC","NE","NH","NM","OK","SD","TX","UT","WA","WI"],"dmas":["Albany, GA","Amarillo","Atlanta","Austin","Beaumont-Port Arthur","Biloxi-Gulfport","Boston (Manchester)","Chicago","Colorado Springs-Pueblo","Columbus, GA (Opelika, AL)","Corpus Christi","Dallas-Ft. Worth","Denver","Detroit","Dothan","Grand Junction-Montrose","Grand Rapids-Kalmzoo-B.Crk","Greenwood-Greenville","Hartford & New Haven","Houston","Jackson, MS","Jacksonville","La Crosse-Eau Claire","Lincoln & Hastings-Krny","Macon","Madison","Memphis","Milwaukee","Minneapolis-St. Paul","Mobile-Pensacola (Ft Walt)","Montgomery-Selma","Oklahoma City","Panama City","Peoria-Bloomington","Phoenix (Prescott)","Raleigh-Durham (Fayetvlle)","Rapid City","Rockford","Salt Lake City","San Antonio","Savannah","Seattle-Tacoma","Shreveport","Springfield, MO","Tallahassee-Thomasville","Tampa-St. Pete (Sarasota)","Terre Haute","Tyler-Longview(Lfkn&Ncgd)","Washington, DC (Hagrstwn)","Yuma-El Centro"]};
+
+const CAT_COLORS = {
+  'Air Conditioning':'#0EA5E9','Air Filters':'#16A34A','Battery':'#D97706',
+  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections':'#4F46E5',
+  'Engine':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
+  'Lighting':'#CA8A04','Shop & Misc':'#6B7280','Suspension & Steering':'#059669',
+  'Tires':'#65A30D','Transmission':'#9333EA','Wiper Blades':'#475569',
+};
+
+const BRAND_COLORS = {
+  'Grease Monkey':'#C8102E','Grease Monkey (ADI)':'#9B0D22',
+  'American Lubefast':'#1D4ED8',"Uncle Ed\'s":'#92400E',
+  'Kwik Kar':'#D97706','SpeeDee':'#0891B2',
+  'Herbert Automotive':'#7C3AED','Economy Oil Change':'#059669',
+};
+
+const DMA_PALETTE = ['#C8102E','#1D4ED8','#059669','#D97706','#7C3AED',
+  '#0891B2','#DC2626','#16A34A','#9333EA','#0EA5E9','#B45309','#CA8A04'];
+
+let filters = {brand:'',state:'',dma:'',city:''};
+let mode = 'brand';
+let activeSvc = null;
+let filtered = RAW.stores;
+let map, markers = [];
+let mapReady = false;
+
+// ── FILTERS INIT ────────────────────────────────────────
+function initFilters() {
+  const bSel = document.getElementById('filterBrand');
+  RAW.brands.forEach(b => bSel.appendChild(new Option(b, b)));
+
+  const sSel = document.getElementById('filterState');
+  RAW.states.forEach(s => sSel.appendChild(new Option(s, s)));
+
+  const dSel = document.getElementById('filterDMA');
+  RAW.dmas.forEach(d => dSel.appendChild(new Option(d, d)));
+
+  refreshCities(RAW.stores);
+
+  ['filterBrand','filterState','filterDMA','filterCity'].forEach(id =>
+    document.getElementById(id).addEventListener('change', onFilter)
+  );
+  document.getElementById('btnReset').addEventListener('click', resetAll);
+}
+
+function refreshCities(stores) {
+  const sel = document.getElementById('filterCity');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Cities</option>';
+  [...new Set(stores.map(s => s.city))].sort().forEach(c => {
+    const o = new Option(c, c);
+    if (c === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function onFilter() {
+  filters.brand = document.getElementById('filterBrand').value;
+  filters.state = document.getElementById('filterState').value;
+  filters.dma   = document.getElementById('filterDMA').value;
+  filters.city  = document.getElementById('filterCity').value;
+  const n = Object.values(filters).filter(v => v).length;
+  const badge = document.getElementById('activeCount');
+  badge.textContent = n;
+  badge.classList.toggle('show', n > 0);
+  apply();
+}
+
+function resetAll() {
+  ['filterBrand','filterState','filterDMA','filterCity'].forEach(id =>
+    document.getElementById(id).value = ''
+  );
+  filters = {brand:'',state:'',dma:'',city:''};
+  document.getElementById('activeCount').classList.remove('show');
+  activeSvc = null;
+  document.querySelectorAll('.svc-chip').forEach(c => {
+    c.classList.remove('active');
+    c.style.background = ''; c.style.borderColor = '';
+  });
+  apply();
+}
+
+function apply() {
+  filtered = RAW.stores.filter(s => {
+    if (filters.brand && s.brand !== filters.brand) return false;
+    if (filters.state && s.state !== filters.state) return false;
+    if (filters.dma   && s.dma_name !== filters.dma) return false;
+    if (filters.city  && s.city !== filters.city) return false;
+    return true;
+  });
+  if (!filters.city) {
+    refreshCities(RAW.stores.filter(s => {
+      if (filters.brand && s.brand !== filters.brand) return false;
+      if (filters.state && s.state !== filters.state) return false;
+      if (filters.dma   && s.dma_name !== filters.dma) return false;
+      return true;
+    }));
+  }
+  updateSummary();
+  updateKPIs();
+  if (mapReady) updateMap();
+}
+
+// ── SUMMARY ─────────────────────────────────────────────
+function updateSummary() {
+  const n = filtered.length;
+  document.getElementById('sumStores').textContent = n;
+  document.getElementById('sumDMAs').textContent = new Set(filtered.map(s => s.dma_name)).size;
+  document.getElementById('sumStates').textContent = new Set(filtered.map(s => s.state)).size;
+  document.getElementById('sumBrands').textContent = new Set(filtered.map(s => s.brand)).size;
+  document.getElementById('headerPill').textContent = n + ' Active Stores';
+  document.getElementById('sumStoresMeta').textContent = 'of ' + RAW.stores.length + ' total locations';
+}
+
+// ── KPIs ─────────────────────────────────────────────────
+function updateKPIs() {
+  const grid = document.getElementById('kpiGrid');
+  const empty = document.getElementById('kpiEmpty');
+  const n = filtered.length;
+  if (n === 0) { grid.innerHTML = ''; empty.classList.add('show'); return; }
+  empty.classList.remove('show');
+  grid.innerHTML = RAW.l1_categories.map(cat => {
+    const cnt = filtered.filter(s => s.categories && s.categories[cat] > 0).length;
+    const pct = Math.round(cnt / n * 100);
+    const col = CAT_COLORS[cat] || '#6B7280';
+    return `<div class="kpi-tile" style="--cat-color:${col}">
+      <div class="kpi-cat">${cat}</div>
+      <div class="kpi-pct-row">
+        <div class="kpi-pct">${pct}</div>
+        <div class="kpi-pct-sym">%</div>
+      </div>
+      <div class="kpi-track"><div class="kpi-fill" style="width:${pct}%"></div></div>
+      <div class="kpi-stores">${cnt} of ${n} stores</div>
+    </div>`;
+  }).join('');
+}
+
+// ── MAP ──────────────────────────────────────────────────
+function initMap() {
+  if (typeof L === 'undefined') {
+    console.error('Leaflet not loaded');
+    document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#9CA3AF;font-size:14px;">Map unavailable — check network connection</div>';
+    return;
+  }
+  map = L.map('map', { center:[37.5,-95], zoom:4, zoomControl:true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom:19
+  }).addTo(map);
+  mapReady = true;
+  buildChips();
+  updateMap();
+}
+
+function buildChips() {
+  document.getElementById('svcChips').innerHTML = RAW.l1_categories.map(cat => {
+    const col = CAT_COLORS[cat] || '#6B7280';
+    return `<button class="svc-chip" onclick="toggleSvc('${cat}',this,'${col}')">${cat}</button>`;
+  }).join('');
+}
+
+function toggleSvc(cat, el, col) {
+  if (activeSvc === cat) {
+    activeSvc = null;
+    document.querySelectorAll('.svc-chip').forEach(c => { c.classList.remove('active'); c.style.background=''; c.style.borderColor=''; });
+  } else {
+    activeSvc = cat;
+    document.querySelectorAll('.svc-chip').forEach(c => { c.classList.remove('active'); c.style.background=''; c.style.borderColor=''; });
+    el.classList.add('active'); el.style.background = col; el.style.borderColor = col;
+  }
+  updateMap();
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('tBrand').classList.toggle('active', m==='brand');
+  document.getElementById('tDMA').classList.toggle('active', m==='dma');
+  document.getElementById('tService').classList.toggle('active', m==='service');
+  const svcRow = document.getElementById('svcRow');
+  svcRow.classList.toggle('show', m==='service');
+  if (m !== 'service') { activeSvc = null; document.querySelectorAll('.svc-chip').forEach(c => { c.classList.remove('active'); c.style.background=''; c.style.borderColor=''; }); }
+  updateMap();
+}
+
+function markerColor(store) {
+  if (mode === 'brand') return BRAND_COLORS[store.brand] || '#C8102E';
+  if (mode === 'dma') {
+    let h = 0;
+    for (let c of (store.dma_name||'')) h = (h*31 + c.charCodeAt(0)) & 0xFFFFFF;
+    return DMA_PALETTE[Math.abs(h) % DMA_PALETTE.length];
+  }
+  if (mode === 'service') {
+    if (!activeSvc) return '#9CA3AF';
+    return (store.categories && store.categories[activeSvc] > 0) ? (CAT_COLORS[activeSvc]||'#059669') : '#D1D5DB';
+  }
+  return '#C8102E';
+}
+
+function makeIcon(color, faded) {
+  const border = faded ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.9)';
+  const opacity = faded ? 0.3 : 1;
+  const shadow = faded ? 'none' : `0 0 6px ${color}66`;
+  return L.divIcon({
+    html:`<div style="width:11px;height:11px;background:${color};border:2px solid ${border};border-radius:50%;opacity:${opacity};box-shadow:${shadow};transition:all .2s;"></div>`,
+    className:'', iconSize:[11,11], iconAnchor:[5.5,5.5]
+  });
+}
+
+function updateMap() {
+  markers.forEach(m => m.remove());
+  markers = [];
+  filtered.forEach(store => {
+    if (!store.lat || !store.lon) return;
+    const col = markerColor(store);
+    const faded = mode==='service' && activeSvc && !(store.categories && store.categories[activeSvc]>0);
+    const m = L.marker([store.lat, store.lon], { icon: makeIcon(col, faded) });
+    const cats = Object.keys(store.categories||{}).sort();
+    const brandCol = BRAND_COLORS[store.brand] || '#C8102E';
+    m.bindPopup(`
+      <div class="popup-inner">
+        <div class="popup-store">${store.store_name}</div>
+        <div class="popup-brand-line" style="color:${brandCol}">${store.brand}</div>
+        <div class="popup-addr">${store.address}<br>${store.city}, ${store.state} ${store.zip}</div>
+        <div class="popup-dma">DMA: <strong>${store.dma_name}</strong></div>
+        <div class="popup-cats">${cats.map(c => {
+          const cc = CAT_COLORS[c]||'#6B7280';
+          return `<span class="popup-cat" style="background:${cc}18;color:${cc};border:1px solid ${cc}30">${c}</span>`;
+        }).join('')}</div>
+      </div>`, {maxWidth:280});
+    m.addTo(map);
+    markers.push(m);
+  });
+  document.getElementById('mapCount').textContent = filtered.length;
+  updateLegend();
+}
+
+function updateLegend() {
+  const leg = document.getElementById('mapLegend');
+  if (mode==='brand') {
+    const bs = [...new Set(filtered.map(s=>s.brand))].sort();
+    leg.innerHTML = bs.map(b => `<div class="legend-item"><div class="legend-dot" style="background:${BRAND_COLORS[b]||'#C8102E'}"></div>${b}</div>`).join('');
+  } else if (mode==='service' && activeSvc) {
+    const col = CAT_COLORS[activeSvc]||'#059669';
+    leg.innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:${col}"></div>Offers ${activeSvc}</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D1D5DB"></div>Does not offer</div>`;
+  } else leg.innerHTML = '';
+}
+
+// ── BOOT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initFilters();
+  updateSummary();
+  updateKPIs();
+  // Small delay ensures Leaflet script has finished parsing
+  setTimeout(initMap, 100);
+});
+</script>
+</body>
+</html>
