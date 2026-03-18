@@ -201,9 +201,24 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .rt td.dc:hover{filter:brightness(.9);}
 .rt .sr td{background:#1F2937!important;color:#fff!important;font-weight:700;font-size:11px;padding:7px 11px;text-align:center;position:sticky;bottom:0;}
 .rt .sr .rh{background:#1F2937!important;color:#fff!important;font-size:11px;}
-.rt.hov td.ch,.rt.hov th.ch{background:rgba(200,16,46,.07)!important;}
-.rt.hov tr.rhl td,.rt.hov tr.rhl th{background:rgba(200,16,46,.07)!important;}
-.rt.hov td.ca{outline:2px solid var(–red)!important;outline-offset:-2px;z-index:1;}
+/* Subtle crosshair guides — column tint */
+.rt.hov td.ch { background:rgba(200,16,46,.04) !important; }
+.rt.hov th.ch { background:rgba(200,16,46,.12) !important; box-shadow:inset 0 -2px 0 rgba(200,16,46,.25); }
+/* Row tint — lighter on cells, slightly stronger on row header */
+.rt.hov tr.rhl > td { background:rgba(200,16,46,.04) !important; }
+.rt.hov tr.rhl > th.rh { background:rgba(200,16,46,.08) !important; border-right-color:rgba(200,16,46,.3); }
+/* Active cell — clean border indicator, no color override so heatmap stays readable */
+.rt.hov td.ca {
+outline: 2px solid rgba(200,16,46,.55) !important;
+outline-offset: -2px;
+z-index: 1;
+box-shadow: inset 0 0 0 1px rgba(200,16,46,.15);
+}
+/* Mute non-highlighted cells slightly so crosshair pops */
+.rt.hov td.dc:not(.ch):not(.ca) { opacity: .82; }
+.rt.hov tr:not(.rhl) > td.dc:not(.ca) { opacity: .82; }
+/* Active cell always full opacity */
+.rt.hov td.ca { opacity: 1 !important; }
 .leg-strip{padding:10px 0;font-size:12px;color:var(–text-m);display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
 .leg-swatch{display:inline-block;width:12px;height:12px;border-radius:2px;border:1px solid #ccc;vertical-align:middle;margin-right:3px;}
 
@@ -275,8 +290,137 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .kpi-tile:nth-child(13){animation:fadeUp .3s ease both;animation-delay:0.39s;}
 .kpi-tile:nth-child(14){animation:fadeUp .3s ease both;animation-delay:0.42s;}
 .kpi-tile:nth-child(15){animation:fadeUp .3s ease both;animation-delay:0.45s;}
-@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(4,1fr);}}
-@media(max-width:900px){.sum-strip{grid-template-columns:repeat(2,1fr);}.kpi-grid{grid-template-columns:repeat(3,1fr);}.main,.hdr,.filters{padding-left:20px;padding-right:20px;}.sidebar{width:100%;right:-100%;}}
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:1200px) {
+.kpi-grid { grid-template-columns:repeat(4,1fr); }
+}
+
+/* ── TABLET (≤900px) ──────────────────────────────────── */
+@media(max-width:900px) {
+/* Layout */
+.main,.hdr,.filters,.tab-nav,.footer { padding-left:16px; padding-right:16px; }
+.main { padding-top:16px; padding-bottom:32px; gap:14px; }
+
+/* Header — collapse to two lines */
+.hdr { height:auto; padding:10px 16px; flex-wrap:wrap; gap:8px; }
+.hdr-r { flex-wrap:wrap; gap:8px; width:100%; justify-content:flex-start; }
+.hdr-date, .hdr-pill { font-size:11px; }
+
+/* Filters — horizontal scroll on small screens */
+.filters { flex-wrap:nowrap; overflow-x:auto; padding-bottom:8px; gap:8px; }
+.filters::-webkit-scrollbar { height:3px; }
+.filters::-webkit-scrollbar-thumb { background:var(–border-mid); border-radius:2px; }
+.f-sep { display:none; }
+.ms-trig { min-width:110px !important; font-size:11px; padding:5px 22px 5px 8px; }
+.btn-reset { margin-left:0; }
+.f-eye { padding-right:8px; }
+
+/* Tab nav — horizontal scroll */
+.tab-nav { overflow-x:auto; padding:0 16px; gap:0; }
+.tab-nav::-webkit-scrollbar { display:none; }
+.tab-btn { font-size:12px; padding:10px 13px 9px; white-space:nowrap; }
+
+/* Sticky offsets adjust for shorter header */
+.filters { top:56px; }
+.tab-nav { top:calc(56px + 45px); }
+
+/* Summary strip — 2 col */
+.sum-strip { grid-template-columns:repeat(2,1fr); gap:10px; }
+.sum-val { font-size:26px; }
+
+/* KPI grid — 3 col */
+.kpi-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
+.kpi-pct { font-size:28px; }
+
+/* Cards */
+.card-hdr { padding:14px 16px 12px; }
+.card-body { padding:14px 16px; }
+.card-title { font-size:17px; }
+
+/* Map header — stack vertically */
+.card-hdr > div[style*=“flex”] { flex-direction:column; gap:10px; align-items:flex-start !important; }
+
+/* Sidebar — full width */
+.sidebar { width:100%; right:-100%; }
+.sidebar.on { right:0; }
+
+/* Context menu — full width bottom sheet on mobile */
+.ctx { position:fixed; left:0 !important; right:0 !important; bottom:0; top:auto !important;
+width:100%; max-height:65vh; border-radius:var(–r) var(–r) 0 0; border-bottom:none; }
+
+/* Rollup tables — make scrollable */
+.rollup-wrap { border-radius:0; border-left:none; border-right:none; }
+.rt .rh { min-width:130px; font-size:11px; padding:7px 10px; }
+.rt td.dc { min-width:58px; font-size:11px; padding:5px 8px; }
+.rt .chr th { font-size:10px; padding:7px 8px; }
+
+/* Method flow — vertical stack */
+.method-flow { flex-direction:column; gap:8px; }
+.m-arr { transform:rotate(90deg); align-self:center; padding:2px 0; }
+.m-step { min-width:unset; }
+
+/* Stat grid — 2 col */
+.stat-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+
+/* L1 cards — 3 col */
+.l1-grid { grid-template-columns:repeat(3,1fr); }
+
+/* Example flow — wrap */
+.ex-flow { flex-direction:column; align-items:flex-start; gap:5px; }
+
+/* Two-col layouts — stack */
+[style*=“grid-template-columns:1fr 1fr”] { grid-template-columns:1fr !important; }
+
+/* Map height */
+#map { height:350px; }
+
+/* Leg strip */
+.leg-strip { gap:10px; }
+}
+
+/* ── MOBILE (≤600px) ──────────────────────────────────── */
+@media(max-width:600px) {
+/* Header compact */
+.hdr-title { font-size:15px; }
+.hdr-sub { font-size:10px; }
+.logo { width:32px; height:32px; }
+.logo svg { width:18px; height:18px; }
+
+/* 1-col KPIs */
+.kpi-grid { grid-template-columns:repeat(2,1fr); }
+.kpi-pct { font-size:24px; }
+
+/* Summary 2x2 */
+.sum-strip { grid-template-columns:repeat(2,1fr); }
+.sum-val { font-size:22px; }
+
+/* L1 cards 2 col */
+.l1-grid { grid-template-columns:repeat(2,1fr); }
+
+/* Stats 2 col */
+.stat-grid { grid-template-columns:repeat(2,1fr); }
+
+/* Tab labels — hide icons on very small */
+.tab-btn { font-size:11px; padding:9px 10px 8px; gap:3px; }
+
+/* Rollup table headers tighter */
+.rt .rh { min-width:110px; font-size:10px; padding:6px 8px; }
+.rt td.dc { min-width:50px; padding:4px 6px; font-size:11px; }
+
+/* Disable hover crosshair on touch — no hover state anyway */
+.rt.hov td.dc:not(.ch):not(.ca) { opacity:1; }
+.rt.hov td.ch, .rt.hov th.ch { background:unset !important; box-shadow:none; }
+.rt.hov tr.rhl > td { background:unset !important; }
+.rt.hov tr.rhl > th.rh { background:unset !important; border-right-color:var(–border-mid); }
+
+/* Map height */
+#map { height:280px; }
+
+/* Method table — stack */
+.m-table th:nth-child(2), .m-table td:nth-child(2) { display:none; }
+}
 </style>
 
 </head>
@@ -1048,17 +1192,19 @@ function updateLegend() {
 // ═══════════════════════════════════════════════════════════
 let ctxStores=[], ctxCat='';
 
-function showCtx(e, rowLbl, colLbl, stores, cat, col) {
-  if (!stores||!stores.length) return;
-  ctxCat=cat; ctxStores=stores;
-  const menu=document.getElementById('ctx');
+function showCtx(mx, my, rowLbl, colLbl, stores, cat, col) {
+  if (!stores || !stores.length) return;
+  ctxCat = cat; ctxStores = stores;
+  const menu = document.getElementById('ctx');
   document.getElementById('ctxTitle').textContent = rowLbl + '  ×  ' + colLbl;
-  document.getElementById('ctxSub').textContent   = stores.length + ' store' + (stores.length!==1?'s':'') + ' offering this service';
-  const badge=document.getElementById('ctxBadge');
-  badge.textContent=cat; badge.style.cssText=`background:${col}18;color:${col};border:1px solid ${col}30;`;
-  document.getElementById('ctxSrch').value='';
+  document.getElementById('ctxSub').textContent   = stores.length + ' store' + (stores.length !== 1 ? 's' : '') + ' offering this service';
+  const badge = document.getElementById('ctxBadge');
+  badge.textContent = cat;
+  badge.style.cssText = 'background:' + col + '18;color:' + col + ';border:1px solid ' + col + '30;';
+  document.getElementById('ctxSrch').value = '';
   renderCtxList(stores);
-  positionCtx(e); menu.classList.add('on');
+  positionCtx(mx, my);
+  menu.classList.add('on');
 }
 
 function renderCtxList(stores) {
@@ -1083,14 +1229,15 @@ function filterCtx() {
   ));
 }
 
-function positionCtx(e) {
-  const menu=document.getElementById('ctx');
-  const pad=12, w=340, h=420;
-  let x=e.clientX+14, y=e.clientY-8;
-  if (x+w>window.innerWidth-pad)  x=e.clientX-w-6;
-  if (y+h>window.innerHeight-pad) y=window.innerHeight-h-pad;
-  if (y<pad) y=pad;
-  menu.style.left=x+'px'; menu.style.top=y+'px';
+function positionCtx(mx, my) {
+  const menu = document.getElementById('ctx');
+  const pad = 12, w = 340, h = 420;
+  let x = mx + 14, y = my - 8;
+  if (x + w > window.innerWidth  - pad) x = mx - w - 6;
+  if (y + h > window.innerHeight - pad) y = window.innerHeight - h - pad;
+  if (y < pad) y = pad;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
 }
 
 function closeCtx() {
@@ -1123,22 +1270,31 @@ function onCellEnter(e, colIdx, rowIdx, tblId) {
   tbl.querySelectorAll('.ch,.ca').forEach(el=>el.classList.remove('ch','ca'));
   tbl.querySelectorAll('.rhl').forEach(el=>el.classList.remove('rhl'));
   // Highlight column header
-  const hdrs = tbl.querySelectorAll(`thead tr th`);
+  const hdrs = tbl.querySelectorAll('thead tr th');
   if (hdrs[colIdx+1]) hdrs[colIdx+1].classList.add('ch');
   // Highlight row
-  const row = tbl.querySelector(`tr[data-ri="${rowIdx}"]`);
+  const row = tbl.querySelector('tr[data-ri="' + rowIdx + '"]');
   if (row) row.classList.add('rhl');
   // Active cell
-  e.currentTarget.classList.add('ca');
-  e.currentTarget.classList.remove('ch');
+  const cell = e.currentTarget;           // capture NOW — stale after handler returns
+  cell.classList.add('ca');
+  cell.classList.remove('ch');
+  // Capture mouse position now — e is also stale inside setTimeout
+  const mx = e.clientX, my = e.clientY;
   // Context menu after delay
   hoverTimer = setTimeout(() => {
-    const cell=e.currentTarget;
-    const cat=cell.dataset.cat, rl=cell.dataset.rl, cl=cell.dataset.cl;
-    const nums=JSON.parse(cell.dataset.stores||'[]');
-    const matched=filtered.filter(s=>nums.includes(s.store_number))
-      .sort((a,b)=>(b.categories[cat]||0)-(a.categories[cat]||0));
-    showCtx(e, rl, cl, matched, cat, CAT_COLORS[cat]||'#6B7280');
+    // cell is captured above, safe to use here
+    if (!cell || !document.body.contains(cell)) return;
+    const cat  = cell.dataset.cat;
+    const rl   = cell.dataset.rl;
+    const cl   = cell.dataset.cl;
+    const storesAttr = cell.getAttribute('data-stores') || '[]';
+    let nums;
+    try { nums = JSON.parse(storesAttr); } catch(_) { nums = []; }
+    const matched = filtered
+      .filter(s => nums.includes(s.store_number))
+      .sort((a,b) => (b.categories[cat]||0) - (a.categories[cat]||0));
+    showCtx(mx, my, rl, cl, matched, cat, CAT_COLORS[cat]||'#6B7280');
   }, 200);
 }
 
