@@ -194,8 +194,29 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .rt{border-collapse:collapse;width:100%;min-width:max-content;font-family:var(–font-b);}
 .rt th,.rt td{border:1px solid var(–border);position:relative;}
 .rt .rh{text-align:left;white-space:normal;min-width:160px;background:var(–white);position:sticky;left:0;z-index:3;padding:9px 13px;font-weight:600;font-size:12px;color:var(–text-1);border-right:2px solid var(–border-mid);}
+/* .rht wraps sticky cell text to keep it above the ::before pseudo-element */
+.rht { position:relative; z-index:1; }
+/* Pseudo-element paints a solid white background on sticky cells.
+This is immune to any class-based background rule on the element itself,
+making the sticky column permanently opaque regardless of hover/highlight state. */
+.rt td.rh::before, .rt th.rh::before {
+content: ‘’;
+position: absolute;
+inset: 0;
+background: var(–white);
+z-index: -1;
+}
+/* Summary row and corner header use dark background */
+.rt .sr td.rh::before, .rt .sr th.rh::before { background: #1F2937; }
+.rt .chr th.rh::before { background: #1F2937; }
+/* Row-highlighted sticky cell gets a very subtle tint via ::before */
+
+/* Summary row sticky cell */
+
+/* Header sticky corner */
+
 .rt .chr th{background:#1F2937;color:#fff;font-size:11px;font-weight:700;padding:9px 11px;letter-spacing:.02em;position:sticky;top:0;z-index:3;}
-.rt .chr th.rh{z-index:4;background:#1F2937;}
+.rt .chr th.rh{z-index:4;}
 .rt .corner{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);padding:9px 13px;text-align:left;}
 .rt td.dc{padding:7px 11px;font-size:12px;cursor:pointer;transition:filter .12s;min-width:70px;text-align:center;}
 .rt td.dc:hover{filter:brightness(.9);}
@@ -207,11 +228,7 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 /* Row tint — lighter on cells, slightly stronger on row header */
 /* Row highlight — skip sticky .rh cells so they keep solid background */
 .rt.hov tr.rhl > td:not(.rh) { background:rgba(200,16,46,.04) !important; }
-.rt.hov tr.rhl > th.rh { background:rgba(200,16,46,.08) !important; border-right-color:rgba(200,16,46,.3); }
 /* Sticky row-header cells always stay opaque — cannot be tinted */
-.rt td.rh { background:var(–white) !important; }
-.rt tr.rhl > td.rh { background:rgba(200,16,46,.06) !important; }
-.rt .sr td.rh, .rt .sr .rh { background:#1F2937 !important; }
 /* Active cell — clean border indicator, no color override so heatmap stays readable */
 .rt.hov td.ca {
 outline: 2px solid rgba(200,16,46,.55) !important;
@@ -416,9 +433,8 @@ width:100%; max-height:65vh; border-radius:var(–r) var(–r) 0 0; border-botto
 
 /* Disable hover crosshair on touch — no hover state anyway */
 .rt.hov td.dc:not(.ch):not(.ca) { opacity:1; }
-.rt.hov td.ch, .rt.hov th.ch { background:unset !important; box-shadow:none; }
+.rt.hov td.ch:not(.rh) { background:unset !important; box-shadow:none; }
 .rt.hov tr.rhl > td:not(.rh) { background:unset !important; }
-.rt.hov tr.rhl > th.rh { background:unset !important; border-right-color:var(–border-mid); }
 
 /* Map height */
 #map { height:280px; }
@@ -1324,7 +1340,7 @@ function buildBrandTable() {
   html+=`<th>All Filtered<br><span style="font-weight:400;font-size:10px;opacity:.6">${total} stores</span></th></tr></thead><tbody>`;
   RAW.l1_categories.forEach((cat,ri) => {
     const col=CAT_COLORS[cat]||'#6B7280';
-    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white);border-left:4px solid ${col}">${cat}</td>`;
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white);border-left:4px solid ${col}"><span class="rht">${cat}</span></td>`;
     [...brands,'__all__'].forEach((brand,ci) => {
       const grp = brand==='__all__' ? filtered : filtered.filter(s=>s.brand===brand);
       const off = grp.filter(s=>s.categories&&s.categories[cat]>0);
@@ -1341,14 +1357,10 @@ function buildBrandTable() {
     });
     html+='</tr>';
   });
-  html+=`<tr class="sr"><td class="rh" style="background:#1F2937">Total Stores</td>`;
+  html+=`<tr class="sr"><td class="rh" style="background:#1F2937"><span class="rht">Total Stores</span></td>`;
   brands.forEach(b=>{ html+=`<td>${filtered.filter(s=>s.brand===b).length}</td>`; });
   html+=`<td>${total}</td></tr></tbody></table>`;
   wrap.innerHTML=html;
-  // Enforce sticky column backgrounds — immune to CSS class overrides
-  wrap.querySelectorAll('td.rh').forEach(function(el) {
-    if (!el.style.background) el.style.background = 'var(--white)';
-  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1369,7 +1381,7 @@ function buildDMATable() {
   html+=`</tr></thead><tbody>`;
   dmas.forEach((dma,ri) => {
     const grp=filtered.filter(s=>s.dma_name===dma);
-    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white)">${dma}</td>` +
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white)"><span class="rht">${dma}</span></td>` +
       `<td style="font-weight:700;font-size:12px;text-align:center;background:var(--surface)">${grp.length}</td>`;
     RAW.l1_categories.forEach((cat,ci) => {
       const off=grp.filter(s=>s.categories&&s.categories[cat]>0);
@@ -1384,7 +1396,7 @@ function buildDMATable() {
     });
     html+='</tr>';
   });
-  html+=`<tr class="sr"><td class="rh">Total Filtered</td><td>${filtered.length}</td>`;
+  html+=`<tr class="sr"><td class="rh"><span class="rht">Total Filtered</span></td><td>${filtered.length}</td>`;
   RAW.l1_categories.forEach(cat => {
     const cnt=filtered.filter(s=>s.categories&&s.categories[cat]>0).length;
     const pct=filtered.length>0?Math.round(cnt/filtered.length*100):0;
@@ -1392,10 +1404,6 @@ function buildDMATable() {
   });
   html+=`</tr></tbody></table>`;
   wrap.innerHTML=html;
-  // Enforce sticky column backgrounds — immune to CSS class overrides
-  wrap.querySelectorAll('td.rh').forEach(function(el) {
-    if (!el.style.background) el.style.background = 'var(--white)';
-  });
 }
 
 // ═══════════════════════════════════════════════════════════
