@@ -27,7 +27,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
-body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
 
 /* HEADER */
 .hdr{background:var(–white);border-bottom:1px solid var(–border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:1000;box-shadow:var(–shadow-sm);}
@@ -110,9 +110,9 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 /* KPI GRID */
 .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
 .kpi-tile{border:1px solid var(–border);border-radius:var(–r);padding:14px;background:var(–white);display:flex;flex-direction:column;gap:9px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s;position:relative;overflow:hidden;}
-.kpi-tile::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:3px;background:var(–c,var(–border));opacity:.5;transition:opacity .2s;}
-.kpi-tile:hover{box-shadow:var(–shadow-md);transform:translateY(-2px);border-color:var(–c,var(–border));}
-.kpi-tile:hover::after{opacity:1;}
+.kpi-tile .kpi-bar{position:absolute;bottom:0;left:0;right:0;height:3px;opacity:.5;transition:opacity .2s;border-radius:0 0 var(–r) var(–r);}
+.kpi-tile:hover{box-shadow:var(–shadow-md);transform:translateY(-2px);}
+.kpi-tile:hover .kpi-bar{opacity:1;}
 .kpi-tile:hover .kpi-hint{opacity:1;}
 .kpi-cat{font-size:11px;font-weight:600;color:var(–text-2);}
 .kpi-pct-row{display:flex;align-items:baseline;gap:2px;}
@@ -193,7 +193,7 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .rollup-wrap{overflow-x:auto;border-radius:var(–r);box-shadow:var(–shadow-sm);border:1px solid var(–border);}
 .rt{border-collapse:collapse;width:100%;min-width:max-content;font-family:var(–font-b);}
 .rt th,.rt td{border:1px solid var(–border);position:relative;}
-.rt .rh{text-align:left;white-space:normal;min-width:160px;background:var(–white);position:sticky;left:0;z-index:2;padding:9px 13px;font-weight:600;font-size:12px;color:var(–text-1);border-right:2px solid var(–border-mid);}
+.rt .rh{text-align:left;white-space:normal;min-width:160px;background:var(–white);position:sticky;left:0;z-index:3;padding:9px 13px;font-weight:600;font-size:12px;color:var(–text-1);border-right:2px solid var(–border-mid);}
 .rt .chr th{background:#1F2937;color:#fff;font-size:11px;font-weight:700;padding:9px 11px;letter-spacing:.02em;position:sticky;top:0;z-index:3;}
 .rt .chr th.rh{z-index:4;background:#1F2937;}
 .rt .corner{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);padding:9px 13px;text-align:left;}
@@ -202,11 +202,16 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .rt .sr td{background:#1F2937!important;color:#fff!important;font-weight:700;font-size:11px;padding:7px 11px;text-align:center;position:sticky;bottom:0;}
 .rt .sr .rh{background:#1F2937!important;color:#fff!important;font-size:11px;}
 /* Subtle crosshair guides — column tint */
-.rt.hov td.ch { background:rgba(200,16,46,.04) !important; }
-.rt.hov th.ch { background:rgba(200,16,46,.12) !important; box-shadow:inset 0 -2px 0 rgba(200,16,46,.25); }
+.rt.hov td.ch:not(.rh) { background:rgba(200,16,46,.04) !important; }
+.rt.hov th.ch { background:rgba(200,16,46,.85) !important; color:#fff !important; box-shadow:inset 0 -3px 0 rgba(0,0,0,.2); }
 /* Row tint — lighter on cells, slightly stronger on row header */
-.rt.hov tr.rhl > td { background:rgba(200,16,46,.04) !important; }
+/* Row highlight — skip sticky .rh cells so they keep solid background */
+.rt.hov tr.rhl > td:not(.rh) { background:rgba(200,16,46,.04) !important; }
 .rt.hov tr.rhl > th.rh { background:rgba(200,16,46,.08) !important; border-right-color:rgba(200,16,46,.3); }
+/* Sticky row-header cells always stay opaque — cannot be tinted */
+.rt td.rh { background:var(–white) !important; }
+.rt tr.rhl > td.rh { background:rgba(200,16,46,.06) !important; }
+.rt .sr td.rh, .rt .sr .rh { background:#1F2937 !important; }
 /* Active cell — clean border indicator, no color override so heatmap stays readable */
 .rt.hov td.ca {
 outline: 2px solid rgba(200,16,46,.55) !important;
@@ -215,8 +220,8 @@ z-index: 1;
 box-shadow: inset 0 0 0 1px rgba(200,16,46,.15);
 }
 /* Mute non-highlighted cells slightly so crosshair pops */
-.rt.hov td.dc:not(.ch):not(.ca) { opacity: .82; }
-.rt.hov tr:not(.rhl) > td.dc:not(.ca) { opacity: .82; }
+.rt.hov td.dc:not(.ch):not(.ca):not(.rh) { opacity: .82; }
+.rt.hov tr:not(.rhl) > td.dc:not(.ca):not(.rh) { opacity: .82; }
 /* Active cell always full opacity */
 .rt.hov td.ca { opacity: 1 !important; }
 .leg-strip{padding:10px 0;font-size:12px;color:var(–text-m);display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
@@ -412,7 +417,7 @@ width:100%; max-height:65vh; border-radius:var(–r) var(–r) 0 0; border-botto
 /* Disable hover crosshair on touch — no hover state anyway */
 .rt.hov td.dc:not(.ch):not(.ca) { opacity:1; }
 .rt.hov td.ch, .rt.hov th.ch { background:unset !important; box-shadow:none; }
-.rt.hov tr.rhl > td { background:unset !important; }
+.rt.hov tr.rhl > td:not(.rh) { background:unset !important; }
 .rt.hov tr.rhl > th.rh { background:unset !important; border-right-color:var(–border-mid); }
 
 /* Map height */
@@ -1018,14 +1023,16 @@ function updateKPIs() {
     const cnt = filtered.filter(s => s.categories && s.categories[cat] > 0).length;
     const pct = Math.round(cnt/n*100);
     const col = CAT_COLORS[cat] || '#6B7280';
-    return `<div class="kpi-tile" style="--c:${col}" onclick="openSidebar('${cat.replace(/'/g,"\\'")}')">` +
-      `<div class="kpi-cat">${cat}</div>` +
-      `<div class="kpi-pct-row"><div class="kpi-pct">${pct}</div><div class="kpi-sym">%</div></div>` +
-      `<div class="kpi-track"><div class="kpi-fill" style="width:${pct}%"></div></div>` +
-      `<div class="kpi-stores">${cnt} of ${n} stores</div>` +
-      `<div class="kpi-hint">` +
-        `<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>` +
-        `View locations</div></div>`;
+    const safeCat = cat.replace(/'/g, "\'");
+    return '<div class="kpi-tile" style="border-color:' + col + '22" onclick="openSidebar(\'' + safeCat + '\')">'
+      + '<div class="kpi-bar" style="background:' + col + '"></div>'
+      + '<div class="kpi-cat" style="color:' + col + '">' + cat + '</div>'
+      + '<div class="kpi-pct-row"><div class="kpi-pct">' + pct + '</div><div class="kpi-sym">%</div></div>'
+      + '<div class="kpi-track"><div class="kpi-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
+      + '<div class="kpi-stores">' + cnt + ' of ' + n + ' stores</div>'
+      + '<div class="kpi-hint" style="color:' + col + '">'
+      + '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + 'View locations</div></div>';
   }).join('');
 }
 
@@ -1317,7 +1324,7 @@ function buildBrandTable() {
   html+=`<th>All Filtered<br><span style="font-weight:400;font-size:10px;opacity:.6">${total} stores</span></th></tr></thead><tbody>`;
   RAW.l1_categories.forEach((cat,ri) => {
     const col=CAT_COLORS[cat]||'#6B7280';
-    html+=`<tr data-ri="${ri}"><td class="rh" style="border-left:4px solid ${col}">${cat}</td>`;
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white);border-left:4px solid ${col}">${cat}</td>`;
     [...brands,'__all__'].forEach((brand,ci) => {
       const grp = brand==='__all__' ? filtered : filtered.filter(s=>s.brand===brand);
       const off = grp.filter(s=>s.categories&&s.categories[cat]>0);
@@ -1334,10 +1341,14 @@ function buildBrandTable() {
     });
     html+='</tr>';
   });
-  html+=`<tr class="sr"><td class="rh">Total Stores</td>`;
+  html+=`<tr class="sr"><td class="rh" style="background:#1F2937">Total Stores</td>`;
   brands.forEach(b=>{ html+=`<td>${filtered.filter(s=>s.brand===b).length}</td>`; });
   html+=`<td>${total}</td></tr></tbody></table>`;
   wrap.innerHTML=html;
+  // Enforce sticky column backgrounds — immune to CSS class overrides
+  wrap.querySelectorAll('td.rh').forEach(function(el) {
+    if (!el.style.background) el.style.background = 'var(--white)';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1358,7 +1369,7 @@ function buildDMATable() {
   html+=`</tr></thead><tbody>`;
   dmas.forEach((dma,ri) => {
     const grp=filtered.filter(s=>s.dma_name===dma);
-    html+=`<tr data-ri="${ri}"><td class="rh">${dma}</td>` +
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white)">${dma}</td>` +
       `<td style="font-weight:700;font-size:12px;text-align:center;background:var(--surface)">${grp.length}</td>`;
     RAW.l1_categories.forEach((cat,ci) => {
       const off=grp.filter(s=>s.categories&&s.categories[cat]>0);
@@ -1381,6 +1392,10 @@ function buildDMATable() {
   });
   html+=`</tr></tbody></table>`;
   wrap.innerHTML=html;
+  // Enforce sticky column backgrounds — immune to CSS class overrides
+  wrap.querySelectorAll('td.rh').forEach(function(el) {
+    if (!el.style.background) el.style.background = 'var(--white)';
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1409,6 +1424,32 @@ document.addEventListener('DOMContentLoaded', () => {
   updateKPIs();
   buildL1Cards();
   setTimeout(initMap, 100);
+  // Set sticky offset CSS variable so content doesn't hide under sticky stack
+  function setStickyOffset() {
+    const hdr     = document.querySelector('.hdr');
+    const filters = document.querySelector('.filters');
+    const tabNav  = document.querySelector('.tab-nav');
+    if (!hdr) return;
+    const hh = hdr.offsetHeight;
+    const fh = filters ? filters.offsetHeight : 0;
+    const th = tabNav  ? tabNav.offsetHeight  : 0;
+    const total = hh + fh + th;
+    document.documentElement.style.setProperty('--sticky-top', total + 'px');
+    document.documentElement.style.setProperty('--hdr-h',      hh + 'px');
+    document.documentElement.style.setProperty('--filter-top', hh + 'px');
+    document.documentElement.style.setProperty('--tab-top',    (hh + fh) + 'px');
+    // Update sticky positions
+    if (filters) filters.style.top = hh + 'px';
+    if (tabNav)  tabNav.style.top  = (hh + fh) + 'px';
+    // Scroll padding so anchor links / focus don't hide behind sticky stack
+    document.documentElement.style.scrollPaddingTop = total + 8 + 'px';
+  }
+  setStickyOffset();
+  // Re-measure on resize (orientation change, font load, etc.)
+  window.addEventListener('resize', setStickyOffset);
+  if (window.ResizeObserver) {
+    new ResizeObserver(setStickyOffset).observe(document.querySelector('.hdr'));
+  }
 });
 
 </script>
