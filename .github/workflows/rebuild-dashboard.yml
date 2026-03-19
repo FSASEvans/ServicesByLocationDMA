@@ -1,14 +1,13 @@
 name: Rebuild & Deploy Dashboard
 
-# Triggers when a CSV is pushed to /data OR manually via Actions tab
 on:
   push:
     paths:
       - 'data/**.csv'
-  workflow_dispatch:      # allows manual trigger from Actions tab
+  workflow_dispatch:
 
 permissions:
-  contents: write         # needed to commit rebuilt index.html back to repo
+  contents: write
   pages: write
   id-token: write
 
@@ -17,22 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      # 1. Check out the full repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Python
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. Install Python dependencies
       - name: Install dependencies
         run: |
           pip install shapely
 
-      # 4. Find the most recent CSV in /data and validate it
       - name: Validate data file
         id: validate
         run: |
@@ -46,8 +41,7 @@ jobs:
           echo "csv_path=$CSV" >> $GITHUB_OUTPUT
           echo "row_count=$ROWS" >> $GITHUB_OUTPUT
 
-      # 5. Run enrichment: brand extraction + DMA assignment
-      - name: Enrich store data (brand + DMA + store model tier)
+      - name: Enrich store data
         run: |
           python scripts/enrich.py \
             --input "${{ steps.validate.outputs.csv_path }}" \
@@ -56,19 +50,16 @@ jobs:
             --dma-boundaries scripts/dma_boundaries.csv \
             --store-models scripts/store_models.csv
 
-      # 6. Build the dashboard HTML with embedded data
       - name: Build dashboard HTML
         run: |
           python scripts/build_dashboard.py \
             --input data/store_services_enriched.csv \
             --output index.html
 
-      # 7. Commit index.html back to repo (Pages serves from root)
       - name: Commit rebuilt dashboard
         run: |
-          git config user.name  "github-actions[bot]"
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
-          # Only commit if something actually changed
           git diff --staged --quiet || git commit -m "chore: rebuild dashboard [$(date '+%Y-%m-%d %H:%M UTC')]"
           git push
