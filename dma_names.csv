@@ -1,0 +1,211 @@
+"geo_dma","dma_code"
+"Portland-Auburn",500
+"New York",501
+"Binghamton",502
+"Macon",503
+"Philadelphia",504
+"Detroit",505
+"Boston (Manchester)",506
+"Savannah",507
+"Pittsburgh",508
+"Ft. Wayne",509
+"Cleveland-Akron (Canton)",510
+"Washington, DC (Hagrstwn)",511
+"Baltimore",512
+"Flint-Saginaw-Bay City",513
+"Buffalo",514
+"Cincinnati",515
+"Erie",516
+"Charlotte",517
+"Greensboro-H.Point-W.Salem",518
+"Charleston, SC",519
+"Augusta-Aiken",520
+"Providence-New Bedford",521
+"Columbus, GA (Opelika, AL)",522
+"Burlington-Plattsburgh",523
+"Atlanta",524
+"Albany, GA",525
+"Utica",526
+"Indianapolis",527
+"Miami-Ft. Lauderdale",528
+"Louisville",529
+"Tallahassee-Thomasville",530
+"Tri-Cities, TN-VA",531
+"Albany-Schenectady-Troy",532
+"Hartford & New Haven",533
+"Orlando-Daytona Bch-Melbrn",534
+"Columbus, OH",535
+"Youngstown",536
+"Bangor",537
+"Rochester, NY",538
+"Tampa-St. Pete (Sarasota)",539
+"Traverse City-Cadillac",540
+"Lexington",541
+"Dayton",542
+"Springfield-Holyoke",543
+"Norfolk-Portsmth-Newpt Nws",544
+"Greenville-N.Bern-Washngtn",545
+"Columbia, SC",546
+"Toledo",547
+"West Palm Beach-Ft. Pierce",548
+"Watertown",549
+"Wilmington",550
+"Lansing",551
+"Presque Isle",552
+"Marquette",553
+"Wheeling-Steubenville",554
+"Syracuse",555
+"Richmond-Petersburg",556
+"Knoxville",557
+"Lima",558
+"Bluefield-Beckley-Oak Hill",559
+"Raleigh-Durham (Fayetvlle)",560
+"Jacksonville",561
+"Grand Rapids-Kalmzoo-B.Crk",563
+"Charleston-Huntington",564
+"Elmira (Corning)",565
+"Harrisburg-Lncstr-Leb-York",566
+"Greenvll-Spart-Ashevll-And",567
+"Harrisonburg",569
+"Myrtle Beach-Florence",570
+"Ft. Myers-Naples",571
+"Roanoke-Lynchburg",573
+"Johnstown-Altoona-St Colge",574
+"Chattanooga",575
+"Salisbury",576
+"Wilkes Barre-Scranton-Hztn",577
+"Terre Haute",581
+"Lafayette, IN",582
+"Alpena",583
+"Charlottesville",584
+"South Bend-Elkhart",588
+"Gainesville",592
+"Zanesville",596
+"Parkersburg",597
+"Clarksburg-Weston",598
+"Corpus Christi",600
+"Chicago",602
+"Joplin-Pittsburg",603
+"Columbia-Jefferson City",604
+"Topeka",605
+"Dothan",606
+"St. Louis",609
+"Rockford",610
+"Rochestr-Mason City-Austin",611
+"Shreveport",612
+"Minneapolis-St. Paul",613
+"Kansas City",616
+"Milwaukee",617
+"Houston",618
+"Springfield, MO",619
+"New Orleans",622
+"Dallas-Ft. Worth",623
+"Sioux City",624
+"Waco-Temple-Bryan",625
+"Victoria",626
+"Wichita Falls & Lawton",627
+"Monroe-El Dorado",628
+"Birmingham (Ann and Tusc)",630
+"Ottumwa-Kirksville",631
+"Paducah-Cape Girard-Harsbg",632
+"Odessa-Midland",633
+"Amarillo",634
+"Austin",635
+"Harlingen-Wslco-Brnsvl-McA",636
+"Cedar Rapids-Wtrlo-IWC&Dub",637
+"St. Joseph",638
+"Jackson, TN",639
+"Memphis",640
+"San Antonio",641
+"Lafayette, LA",642
+"Lake Charles",643
+"Alexandria, LA",644
+"Greenwood-Greenville",647
+"Champaign&Sprngfld-Decatur",648
+"Evansville",649
+"Oklahoma City",650
+"Lubbock",651
+"Omaha",652
+"Panama City",656
+"Sherman-Ada",657
+"Green Bay-Appleton",658
+"Nashville",659
+"San Angelo",661
+"Abilene-Sweetwater",662
+"Madison",669
+"Ft. Smith-Fay-Sprngdl-Rgrs",670
+"Tulsa",671
+"Columbus-Tupelo-W Pnt-Hstn",673
+"Peoria-Bloomington",675
+"Duluth-Superior",676
+"Wichita-Hutchinson Plus",678
+"Des Moines-Ames",679
+"Davenport-R.Island-Moline",682
+"Mobile-Pensacola (Ft Walt)",686
+"Minot-Bsmrck-Dcknsn(Wlstn)",687
+"Huntsville-Decatur (Flor)",691
+"Beaumont-Port Arthur",692
+"Little Rock-Pine Bluff",693
+"Montgomery-Selma",698
+"La Crosse-Eau Claire",702
+"Wausau-Rhinelander",705
+"Tyler-Longview(Lfkn&Ncgd)",709
+"Hattiesburg-Laurel",710
+"Meridian",711
+"Baton Rouge",716
+"Quincy-Hannibal-Keokuk",717
+"Jackson, MS",718
+"Lincoln & Hastings-Krny",722
+"Fargo-Valley City",724
+"Sioux Falls(Mitchell)",725
+"Jonesboro",734
+"Bowling Green",736
+"Mankato",737
+"North Platte",740
+"Anchorage",743
+"Honolulu",744
+"Fairbanks",745
+"Biloxi-Gulfport",746
+"Juneau",747
+"Laredo",749
+"Denver",751
+"Colorado Springs-Pueblo",752
+"Phoenix (Prescott)",753
+"Butte-Bozeman",754
+"Great Falls",755
+"Billings",756
+"Boise",757
+"Idaho Fals-Pocatllo(Jcksn)",758
+"Cheyenne-Scottsbluff",759
+"Twin Falls",760
+"Missoula",762
+"Rapid City",764
+"El Paso (Las Cruces)",765
+"Helena",766
+"Casper-Riverton",767
+"Salt Lake City",770
+"Yuma-El Centro",771
+"Grand Junction-Montrose",773
+"Tucson (Sierra Vista)",789
+"Albuquerque-Santa Fe",790
+"Glendive",798
+"Bakersfield",800
+"Eugene",801
+"Eureka",802
+"Los Angeles",803
+"Palm Springs",804
+"San Francisco-Oak-San Jose",807
+"Yakima-Pasco-Rchlnd-Knnwck",810
+"Reno",811
+"Medford-Klamath Falls",813
+"Seattle-Tacoma",819
+"Portland, OR",820
+"Bend, OR",821
+"San Diego",825
+"Monterey-Salinas",828
+"Las Vegas",839
+"SantaBarbra-SanMar-SanLuOb",855
+"Sacramnto-Stkton-Modesto",862
+"Fresno-Visalia",866
+"Chico-Redding",868
+"Spokane",881

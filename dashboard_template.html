@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FullSpeed Automotive — Store Service Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root {
+  --red:#C8102E; --red-pale:#FDF2F4; --red-light:#F5E7EA;
+  --navy:#1F2937; --charcoal:#374151;
+  --text-1:#111827; --text-2:#4B5563; --text-m:#9CA3AF;
+  --border:#E5E7EB; --border-mid:#D1D5DB;
+  --bg:#F9FAFB; --white:#FFFFFF; --surface:#F3F4F6;
+  --green:#059669; --green-bg:#ECFDF5; --green-dk:#065F46;
+  --amber:#D97706; --amber-bg:#FFFBEB; --amber-dk:#92400E;
+  --red-row:#FEE2E2; --red-dk:#991B1B;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.12);
+  --shadow-xl:0 20px 50px rgba(0,0,0,.18),0 8px 16px rgba(0,0,0,.08);
+  --r:8px; --r-sm:5px;
+  --font:'DM Sans',sans-serif; --font-b:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
+
+/* HEADER */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:1000;box-shadow:var(--shadow-sm);}
+.hdr-l{display:flex;align-items:center;gap:16px;}
+.logo{width:38px;height:38px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hdr-div{width:1px;height:28px;background:var(--border);}
+.hdr-title{font-family:var(--font);font-weight:700;font-size:17px;letter-spacing:-.01em;line-height:1.2;}
+.hdr-title span{color:var(--red);}
+.hdr-sub{font-size:11px;color:var(--text-m);font-weight:500;margin-top:1px;}
+.hdr-r{display:flex;align-items:center;gap:14px;}
+.hdr-pill{background:var(--red-pale);color:var(--red);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--red-light);font-family:var(--font);white-space:nowrap;}
+.hdr-date{font-size:12px;color:var(--text-2);font-weight:500;background:var(--surface);padding:5px 12px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;}
+.hdr-date strong{color:var(--text-1);font-weight:600;}
+
+/* FILTERS */
+.filters{background:var(--white);border-bottom:1px solid var(--border);padding:10px 40px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:68px;z-index:999;}
+.f-eye{font-size:11px;font-weight:600;color:var(--text-m);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:5px;padding-right:10px;border-right:1px solid var(--border);white-space:nowrap;}
+.f-badge{background:var(--red);color:#fff;border-radius:10px;min-width:18px;height:18px;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 5px;}
+.f-badge.on{display:flex;}
+.f-grp{display:flex;align-items:center;gap:5px;}
+.f-lbl{font-size:11px;font-weight:600;color:var(--text-m);white-space:nowrap;}
+.ms-wrap{position:relative;}
+.ms-trig{background:var(--white);border:1px solid var(--border-mid);color:var(--text-1);font-family:var(--font-b);font-size:12px;font-weight:500;padding:6px 26px 6px 10px;border-radius:var(--r-sm);cursor:pointer;min-width:130px;display:flex;align-items:center;justify-content:space-between;gap:5px;transition:border-color .15s,box-shadow .15s;user-select:none;}
+.ms-trig:hover{border-color:var(--text-m);}
+.ms-trig.open{border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.08);}
+.ms-caret{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text-m);flex-shrink:0;transition:transform .15s;}
+.ms-trig.open .ms-caret{transform:rotate(180deg);}
+.ms-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ms-cnt{background:var(--red);color:#fff;border-radius:10px;min-width:15px;height:15px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0;}
+.ms-dd{position:absolute;top:calc(100% + 4px);left:0;background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r);box-shadow:var(--shadow-lg);min-width:210px;max-width:260px;z-index:2000;display:none;overflow:hidden;}
+.ms-dd.open{display:block;}
+.ms-dd-search{padding:7px 10px;border-bottom:1px solid var(--border);}
+.ms-dd-search input{width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 8px;font-size:12px;font-family:var(--font-b);outline:none;background:var(--surface);color:var(--text-1);}
+.ms-dd-search input:focus{border-color:var(--red);}
+.ms-list{max-height:200px;overflow-y:auto;}
+.ms-item{display:flex;align-items:center;gap:7px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-2);font-weight:500;transition:background .1s;}
+.ms-item:hover{background:var(--surface);}
+.ms-item.sel{background:var(--red-pale);color:var(--text-1);}
+.ms-item input[type=checkbox]{width:13px;height:13px;accent-color:var(--red);flex-shrink:0;cursor:pointer;}
+.ms-foot{padding:7px 10px;border-top:1px solid var(--border);display:flex;gap:5px;}
+.ms-foot button{flex:1;font-size:11px;font-weight:600;padding:4px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;font-family:var(--font-b);border:1px solid;}
+.ms-btn-all{background:var(--surface);border-color:var(--border);color:var(--text-2);}
+.ms-btn-all:hover{background:var(--border);}
+.ms-btn-clr{background:var(--red-pale);border-color:var(--red-light);color:var(--red);}
+.ms-btn-clr:hover{background:var(--red-light);}
+.f-sep{width:1px;height:30px;background:var(--border);align-self:center;}
+.btn-reset{margin-left:auto;background:transparent;border:1px solid var(--border-mid);color:var(--text-m);font-family:var(--font-b);font-size:12px;font-weight:500;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px;}
+.btn-reset:hover{border-color:var(--red);color:var(--red);background:var(--red-pale);}
+
+/* TAB NAV */
+.tab-nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:flex-end;position:sticky;top:117px;z-index:998;box-shadow:0 1px 3px rgba(0,0,0,.04);will-change:top;}
+.tab-btn{padding:12px 18px 11px;font-family:var(--font-b);font-size:13px;font-weight:600;color:var(--text-m);border:none;border-bottom:3px solid transparent;background:transparent;cursor:pointer;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:6px;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--text-1);}
+.tab-btn.active{color:var(--red);border-bottom-color:var(--red);}
+
+/* MAIN / PANELS */
+.main{padding:24px 40px 40px;display:flex;flex-direction:column;gap:20px;max-width:1600px;margin:0 auto;background:var(--white);}
+.panel{display:none;}
+.panel.active{display:flex;flex-direction:column;gap:20px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-sm);overflow:hidden;}
+.card-hdr{padding:18px 24px 14px;border-bottom:1px solid var(--border);}
+.card-lbl{font-size:11px;font-weight:600;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.card-title{font-family:var(--font);font-weight:700;font-size:19px;color:var(--text-1);letter-spacing:-.02em;}
+.card-desc{font-size:12px;color:var(--text-m);margin-top:3px;}
+.card-body{padding:20px 24px;}
+.card-body-flush{padding:0;}
+
+/* SUMMARY STRIP */
+.sum-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.sum-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-sm);display:flex;align-items:flex-start;gap:12px;transition:box-shadow .2s,transform .2s;}
+.sum-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.sum-icon{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;}
+.si-r{background:var(--red-pale);}  .si-g{background:var(--green-bg);}
+.si-gr{background:var(--surface);}  .si-a{background:var(--amber-bg);}
+.sum-lbl{font-size:11px;font-weight:500;color:var(--text-m);margin-bottom:2px;}
+.sum-val{font-family:var(--font);font-size:30px;font-weight:700;color:var(--text-1);line-height:1;letter-spacing:-.02em;}
+.sum-val.acc{color:var(--red);}
+.sum-meta{font-size:11px;color:var(--text-m);margin-top:2px;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.kpi-tile{border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--white);display:flex;flex-direction:column;gap:9px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s;position:relative;overflow:hidden;}
+.kpi-tile .kpi-bar{position:absolute;bottom:0;left:0;right:0;height:3px;opacity:.5;transition:opacity .2s;border-radius:0 0 var(--r) var(--r);}
+.kpi-tile:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.kpi-tile:hover .kpi-bar{opacity:1;}
+.kpi-tile:hover .kpi-hint{opacity:1;}
+.kpi-cat{font-size:11px;font-weight:600;color:var(--text-2);}
+.kpi-pct-row{display:flex;align-items:baseline;gap:2px;}
+.kpi-pct{font-family:var(--font);font-size:32px;font-weight:700;line-height:1;color:var(--text-1);letter-spacing:-.02em;}
+.kpi-sym{font-size:15px;font-weight:600;color:var(--text-m);}
+.kpi-track{height:4px;background:var(--surface);border-radius:2px;overflow:hidden;}
+.kpi-fill{height:100%;background:var(--c,var(--red));border-radius:2px;transition:width .6s cubic-bezier(.16,1,.3,1);}
+.kpi-stores{font-size:10px;color:var(--text-m);}
+.kpi-hint{font-size:10px;font-weight:600;color:var(--c,var(--red));opacity:0;transition:opacity .2s;display:flex;align-items:center;gap:3px;}
+.empty{text-align:center;padding:40px;display:none;}
+.empty.on{display:block;}
+.empty-icon{font-size:32px;margin-bottom:8px;}
+.empty-txt{font-family:var(--font);font-size:16px;font-weight:700;color:var(--text-m);}
+
+/* SIDEBAR */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:2000;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px);}
+.overlay.on{opacity:1;pointer-events:all;}
+.sidebar{position:fixed;right:-480px;top:0;bottom:0;width:480px;background:var(--white);z-index:2001;box-shadow:var(--shadow-xl);transition:right .3s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;}
+.sidebar.on{right:0;}
+.sb-hdr{padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sb-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.sb-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:10px;margin-bottom:6px;}
+.sb-title{font-family:var(--font);font-weight:700;font-size:19px;letter-spacing:-.01em;color:var(--text-1);}
+.sb-sub{font-size:12px;color:var(--text-m);margin-top:2px;}
+.sb-close{width:30px;height:30px;border-radius:var(--r-sm);border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-m);font-size:16px;transition:all .15s;flex-shrink:0;}
+.sb-close:hover{background:var(--red-pale);border-color:var(--red-light);color:var(--red);}
+.sb-search{padding:10px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sb-search input{width:100%;border:1px solid var(--border-mid);border-radius:var(--r-sm);padding:7px 11px;font-size:12px;font-family:var(--font-b);color:var(--text-1);outline:none;background:var(--surface);}
+.sb-search input:focus{border-color:var(--red);background:var(--white);}
+.sb-list{flex:1;overflow-y:auto;padding:8px 0;}
+.sb-grp-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 22px 3px;border-top:1px solid var(--border);margin-top:3px;}
+.sb-grp-lbl:first-child{border-top:none;margin-top:0;}
+.sb-item{display:flex;align-items:center;padding:9px 22px;gap:11px;border-bottom:1px solid var(--border);transition:background .1s;}
+.sb-item:last-child{border-bottom:none;}
+.sb-item:hover{background:var(--surface);}
+.sb-num{font-size:10px;color:var(--text-m);width:22px;text-align:right;flex-shrink:0;font-weight:600;}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sb-body{flex:1;min-width:0;}
+.sb-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-detail{font-size:10px;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-tx{font-size:12px;font-weight:700;color:var(--text-2);flex-shrink:0;}
+.sb-foot{padding:11px 22px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;font-size:11px;color:var(--text-m);display:flex;justify-content:space-between;}
+
+/* MAP */
+.map-ctrl-row{padding:12px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);}
+.map-ctrl-lbl{font-size:11px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.tog-grp{display:flex;background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r-sm);overflow:hidden;}
+.tog-btn{background:transparent;border:none;border-right:1px solid var(--border-mid);color:var(--text-m);font-family:var(--font-b);font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tog-btn:last-child{border-right:none;}
+.tog-btn:hover{background:var(--surface);color:var(--text-1);}
+.tog-btn.active{background:var(--red);color:#fff;}
+.svc-row{display:none;padding:10px 22px;border-bottom:1px solid var(--border);align-items:center;gap:8px;flex-wrap:wrap;background:var(--red-pale);}
+.svc-row.on{display:flex;}
+.svc-row-lbl{font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.chip{background:var(--white);border:1px solid var(--border-mid);color:var(--text-2);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;cursor:pointer;transition:all .15s;font-family:var(--font-b);}
+.chip:hover{border-color:var(--text-m);color:var(--text-1);}
+.chip.active{color:#fff;border-color:transparent;}
+#map{height:490px;width:100%;}
+.map-foot{padding:11px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--white);}
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2);font-weight:500;}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.map-cnt{font-size:12px;color:var(--text-2);font-weight:600;}
+.map-cnt span{color:var(--red);}
+.leaflet-container{background:#EEF2F7;font-family:var(--font-b);}
+.leaflet-popup-content-wrapper{border-radius:8px!important;box-shadow:var(--shadow-lg)!important;border:1px solid var(--border)!important;font-family:var(--font-b)!important;padding:0!important;overflow:hidden;}
+.leaflet-popup-content{margin:0!important;}
+.pop-inner{padding:13px 15px;}
+.pop-store{font-family:var(--font);font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:2px;letter-spacing:-.01em;}
+.pop-brand{font-size:11px;font-weight:600;margin-bottom:7px;}
+.pop-addr{font-size:11px;color:var(--text-m);line-height:1.5;margin-bottom:7px;}
+.pop-dma{font-size:11px;color:var(--text-m);padding-top:7px;border-top:1px solid var(--border);}
+.pop-dma strong{color:var(--text-2);}
+.pop-cats{display:flex;flex-wrap:wrap;gap:3px;margin-top:7px;}
+.pop-cat{font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px;font-family:var(--font);letter-spacing:.04em;text-transform:uppercase;}
+
+/* ROLLUP TABLES */
+.rollup-wrap{overflow-x:auto;border-radius:var(--r);box-shadow:var(--shadow-sm);border:1px solid var(--border);}
+.rt{border-collapse:collapse;width:100%;min-width:max-content;font-family:var(--font-b);}
+.rt th,.rt td{border:1px solid var(--border);position:relative;}
+.rt .rh{text-align:left;white-space:normal;min-width:160px;background:var(--white);position:sticky;left:0;z-index:3;padding:9px 13px;font-weight:600;font-size:12px;color:var(--text-1);border-right:2px solid var(--border-mid);}
+/* .rht wraps sticky cell text to keep it above the ::before pseudo-element */
+.rht { position:relative; z-index:1; }
+/* Pseudo-element paints a solid white background on sticky cells.
+   This is immune to any class-based background rule on the element itself,
+   making the sticky column permanently opaque regardless of hover/highlight state. */
+.rt td.rh::before, .rt th.rh::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--white);
+  z-index: -1;
+}
+/* Summary row and corner header use dark background */
+.rt .sr td.rh::before, .rt .sr th.rh::before { background: #1F2937; }
+.rt .chr th.rh::before { background: #1F2937; }
+/* Row-highlighted sticky cell gets a very subtle tint via ::before */
+
+/* Summary row sticky cell */
+
+/* Header sticky corner */
+
+.rt .chr th{background:#1F2937;color:#fff;font-size:11px;font-weight:700;padding:9px 11px;letter-spacing:.02em;position:sticky;top:0;z-index:3;}
+.rt .chr th.rh{z-index:4;}
+.rt .corner{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);padding:9px 13px;text-align:left;}
+.rt td.dc{padding:7px 11px;font-size:12px;cursor:pointer;transition:filter .12s;min-width:70px;text-align:center;}
+.rt td.dc:hover{filter:brightness(.9);}
+.rt .sr td{background:#1F2937!important;color:#fff!important;font-weight:700;font-size:11px;padding:7px 11px;text-align:center;position:sticky;bottom:0;}
+.rt .sr .rh{background:#1F2937!important;color:#fff!important;font-size:11px;}
+/* Subtle crosshair guides — column tint */
+.rt.hov td.ch:not(.rh) { background:rgba(200,16,46,.04) !important; }
+.rt.hov th.ch { background:rgba(200,16,46,.85) !important; color:#fff !important; box-shadow:inset 0 -3px 0 rgba(0,0,0,.2); }
+/* Row tint — lighter on cells, slightly stronger on row header */
+/* Row highlight — skip sticky .rh cells so they keep solid background */
+.rt.hov tr.rhl > td:not(.rh) { background:rgba(200,16,46,.04) !important; }
+/* Sticky row-header cells always stay opaque — cannot be tinted */
+/* Active cell — clean border indicator, no color override so heatmap stays readable */
+.rt.hov td.ca {
+  outline: 2px solid rgba(200,16,46,.55) !important;
+  outline-offset: -2px;
+  z-index: 1;
+  box-shadow: inset 0 0 0 1px rgba(200,16,46,.15);
+}
+/* Mute non-highlighted cells slightly so crosshair pops */
+.rt.hov td.dc:not(.ch):not(.ca):not(.rh) { opacity: .82; }
+.rt.hov tr:not(.rhl) > td.dc:not(.ca):not(.rh) { opacity: .82; }
+/* Active cell always full opacity */
+.rt.hov td.ca { opacity: 1 !important; }
+.leg-strip{padding:10px 0;font-size:12px;color:var(--text-m);display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+.leg-swatch{display:inline-block;width:12px;height:12px;border-radius:2px;border:1px solid #ccc;vertical-align:middle;margin-right:3px;}
+
+/* CONTEXT MENU */
+.ctx{position:fixed;background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r);box-shadow:var(--shadow-xl);z-index:9999;width:340px;max-height:460px;display:flex;flex-direction:column;pointer-events:none;opacity:0;transform:scale(.97) translateY(-4px);transition:opacity .15s,transform .15s;}
+.ctx.on{pointer-events:all;opacity:1;transform:scale(1) translateY(0);}
+.ctx-hdr{padding:11px 15px 9px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ctx-title{font-family:var(--font);font-weight:700;font-size:13px;color:var(--text-1);margin-bottom:2px;}
+.ctx-sub{font-size:11px;color:var(--text-m);}
+.ctx-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;margin-top:4px;}
+.ctx-srch{padding:7px 11px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ctx-srch input{width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 8px;font-size:12px;font-family:var(--font-b);outline:none;background:var(--surface);color:var(--text-1);}
+.ctx-srch input:focus{border-color:var(--red);}
+.ctx-list{overflow-y:auto;flex:1;}
+.ctx-item{display:flex;align-items:center;padding:7px 15px;gap:9px;border-bottom:1px solid var(--border);transition:background .1s;}
+.ctx-item:last-child{border-bottom:none;}
+.ctx-item:hover{background:var(--surface);}
+.ctx-n{font-size:10px;color:var(--text-m);width:20px;text-align:right;flex-shrink:0;font-weight:600;}
+.ctx-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ctx-body{flex:1;min-width:0;}
+.ctx-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ctx-det{font-size:10px;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ctx-tx{font-size:12px;font-weight:700;color:var(--text-2);flex-shrink:0;}
+.ctx-foot{padding:7px 15px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-m);display:flex;justify-content:space-between;flex-shrink:0;border-radius:0 0 var(--r) var(--r);}
+
+/* METHODOLOGY */
+.method-flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 0;}
+.m-step{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center;}
+.m-num{width:26px;height:26px;background:var(--red);color:#fff;border-radius:50%;font-family:var(--font);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 7px;}
+.m-ttl{font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:3px;}
+.m-desc{font-size:11px;color:var(--text-m);line-height:1.4;}
+.m-arr{display:flex;align-items:center;padding:0 5px;color:var(--text-m);font-size:16px;flex-shrink:0;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.l1-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.l1-card{border-radius:var(--r-sm);padding:11px 9px;border:1px solid;}
+.l1-card-n{font-size:11px;font-weight:700;margin-bottom:3px;}
+.l1-card-s{font-size:10px;opacity:.75;}
+.code-pill{display:inline-block;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:'Courier New',monospace;font-size:11px;color:var(--red);}
+.ex-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:14px;}
+.ex-lbl{font-size:10px;font-weight:700;color:var(--text-m);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+.ex-flow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.m-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-b);}
+.m-table th{background:#1F2937;color:#fff;padding:8px 12px;text-align:left;font-weight:600;font-size:11px;letter-spacing:.02em;}
+.m-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.m-table tr:nth-child(even) td{background:var(--surface);}
+.m-table tr:last-child td{border-bottom:none;}
+.warn-pill{display:inline-block;background:var(--amber-bg);border:1px solid #FCD34D;border-radius:3px;padding:1px 7px;font-size:11px;color:var(--amber-dk);font-weight:600;}
+.note-box{background:var(--amber-bg);border:1px solid #FCD34D;border-left:4px solid var(--amber);border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--amber-dk);line-height:1.5;}
+
+/* FOOTER */
+.footer{border-top:1px solid var(--border);padding:16px 40px;background:var(--white);display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.footer-brand{font-family:var(--font);font-size:12px;font-weight:700;color:var(--text-2);}
+.footer-brand span{color:var(--red);}
+.footer-meta{font-size:11px;color:var(--text-m);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:translateY(0);}}
+.kpi-tile:nth-child(1){animation:fadeUp .3s ease both;animation-delay:0.03s;}
+.kpi-tile:nth-child(2){animation:fadeUp .3s ease both;animation-delay:0.06s;}
+.kpi-tile:nth-child(3){animation:fadeUp .3s ease both;animation-delay:0.09s;}
+.kpi-tile:nth-child(4){animation:fadeUp .3s ease both;animation-delay:0.12s;}
+.kpi-tile:nth-child(5){animation:fadeUp .3s ease both;animation-delay:0.15s;}
+.kpi-tile:nth-child(6){animation:fadeUp .3s ease both;animation-delay:0.18s;}
+.kpi-tile:nth-child(7){animation:fadeUp .3s ease both;animation-delay:0.21s;}
+.kpi-tile:nth-child(8){animation:fadeUp .3s ease both;animation-delay:0.24s;}
+.kpi-tile:nth-child(9){animation:fadeUp .3s ease both;animation-delay:0.27s;}
+.kpi-tile:nth-child(10){animation:fadeUp .3s ease both;animation-delay:0.30s;}
+.kpi-tile:nth-child(11){animation:fadeUp .3s ease both;animation-delay:0.33s;}
+.kpi-tile:nth-child(12){animation:fadeUp .3s ease both;animation-delay:0.36s;}
+.kpi-tile:nth-child(13){animation:fadeUp .3s ease both;animation-delay:0.39s;}
+.kpi-tile:nth-child(14){animation:fadeUp .3s ease both;animation-delay:0.42s;}
+.kpi-tile:nth-child(15){animation:fadeUp .3s ease both;animation-delay:0.45s;}
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:1200px) {
+  .kpi-grid { grid-template-columns:repeat(4,1fr); }
+}
+
+/* ── TABLET (≤900px) ──────────────────────────────────── */
+@media(max-width:900px) {
+  /* Layout */
+  .main,.hdr,.filters,.tab-nav,.footer { padding-left:16px; padding-right:16px; }
+  .main { padding-top:16px; padding-bottom:32px; gap:14px; }
+
+  /* Header — collapse to two lines */
+  .hdr { height:auto; padding:10px 16px; flex-wrap:wrap; gap:8px; }
+  .hdr-r { flex-wrap:wrap; gap:8px; width:100%; justify-content:flex-start; }
+  .hdr-date, .hdr-pill { font-size:11px; }
+
+  /* Filters — horizontal scroll on small screens */
+  .filters { flex-wrap:nowrap; overflow-x:auto; padding-bottom:8px; gap:8px; }
+  .filters::-webkit-scrollbar { height:3px; }
+  .filters::-webkit-scrollbar-thumb { background:var(--border-mid); border-radius:2px; }
+  .f-sep { display:none; }
+  .ms-trig { min-width:110px !important; font-size:11px; padding:5px 22px 5px 8px; }
+  .btn-reset { margin-left:0; }
+  .f-eye { padding-right:8px; }
+
+  /* Tab nav — horizontal scroll */
+  .tab-nav { overflow-x:auto; padding:0 16px; gap:0; }
+  .tab-nav::-webkit-scrollbar { display:none; }
+  .tab-btn { font-size:12px; padding:10px 13px 9px; white-space:nowrap; }
+
+  /* Sticky offsets adjust for shorter header */
+  .filters { top:56px; }
+  .tab-nav { top:calc(56px + 45px); }
+
+  /* Summary strip — 2 col */
+  .sum-strip { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .sum-val { font-size:26px; }
+
+  /* KPI grid — 3 col */
+  .kpi-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
+  .kpi-pct { font-size:28px; }
+
+  /* Cards */
+  .card-hdr { padding:14px 16px 12px; }
+  .card-body { padding:14px 16px; }
+  .card-title { font-size:17px; }
+
+  /* Map header — stack vertically */
+  .card-hdr > div[style*="flex"] { flex-direction:column; gap:10px; align-items:flex-start !important; }
+
+  /* Sidebar — full width */
+  .sidebar { width:100%; right:-100%; }
+  .sidebar.on { right:0; }
+
+  /* Context menu — full width bottom sheet on mobile */
+  .ctx { position:fixed; left:0 !important; right:0 !important; bottom:0; top:auto !important;
+    width:100%; max-height:65vh; border-radius:var(--r) var(--r) 0 0; border-bottom:none; }
+
+  /* Rollup tables — make scrollable */
+  .rollup-wrap { border-radius:0; border-left:none; border-right:none; }
+  .rt .rh { min-width:130px; font-size:11px; padding:7px 10px; }
+  .rt td.dc { min-width:58px; font-size:11px; padding:5px 8px; }
+  .rt .chr th { font-size:10px; padding:7px 8px; }
+
+  /* Method flow — vertical stack */
+  .method-flow { flex-direction:column; gap:8px; }
+  .m-arr { transform:rotate(90deg); align-self:center; padding:2px 0; }
+  .m-step { min-width:unset; }
+
+  /* Stat grid — 2 col */
+  .stat-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+
+  /* L1 cards — 3 col */
+  .l1-grid { grid-template-columns:repeat(3,1fr); }
+
+  /* Example flow — wrap */
+  .ex-flow { flex-direction:column; align-items:flex-start; gap:5px; }
+
+  /* Two-col layouts — stack */
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+
+  /* Map height */
+  #map { height:350px; }
+
+  /* Leg strip */
+  .leg-strip { gap:10px; }
+}
+
+/* ── MOBILE (≤600px) ──────────────────────────────────── */
+@media(max-width:600px) {
+  /* Header compact */
+  .hdr-title { font-size:15px; }
+  .hdr-sub { font-size:10px; }
+  .logo { width:32px; height:32px; }
+  .logo svg { width:18px; height:18px; }
+
+  /* 1-col KPIs */
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+  .kpi-pct { font-size:24px; }
+
+  /* Summary 2x2 */
+  .sum-strip { grid-template-columns:repeat(2,1fr); }
+  .sum-val { font-size:22px; }
+
+  /* L1 cards 2 col */
+  .l1-grid { grid-template-columns:repeat(2,1fr); }
+
+  /* Stats 2 col */
+  .stat-grid { grid-template-columns:repeat(2,1fr); }
+
+  /* Tab labels — hide icons on very small */
+  .tab-btn { font-size:11px; padding:9px 10px 8px; gap:3px; }
+
+  /* Rollup table headers tighter */
+  .rt .rh { min-width:110px; font-size:10px; padding:6px 8px; }
+  .rt td.dc { min-width:50px; padding:4px 6px; font-size:11px; }
+
+  /* Disable hover crosshair on touch — no hover state anyway */
+  .rt.hov td.dc:not(.ch):not(.ca) { opacity:1; }
+  .rt.hov td.ch:not(.rh) { background:unset !important; box-shadow:none; }
+  .rt.hov tr.rhl > td:not(.rh) { background:unset !important; }
+  
+
+  /* Map height */
+  #map { height:280px; }
+
+  /* Method table — stack */
+  .m-table th:nth-child(2), .m-table td:nth-child(2) { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- CONTEXT MENU -->
+<div class="ctx" id="ctx">
+  <div class="ctx-hdr">
+    <div class="ctx-title" id="ctxTitle"></div>
+    <div class="ctx-sub" id="ctxSub"></div>
+    <div class="ctx-badge" id="ctxBadge"></div>
+  </div>
+  <div class="ctx-srch"><input type="text" id="ctxSrch" placeholder="Search stores, cities, DMAs..." oninput="filterCtx()"></div>
+  <div class="ctx-list" id="ctxList"></div>
+  <div class="ctx-foot" id="ctxFoot"></div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sb-hdr">
+    <div class="sb-top">
+      <div>
+        <div class="sb-badge" id="sbBadge"></div>
+        <div class="sb-title" id="sbTitle"></div>
+        <div class="sb-sub" id="sbSub"></div>
+      </div>
+      <button class="sb-close" onclick="closeSidebar()">&#x2715;</button>
+    </div>
+  </div>
+  <div class="sb-search"><input type="text" id="sbSearch" placeholder="Search stores, cities, DMAs..." oninput="filterSB()"></div>
+  <div class="sb-list" id="sbList"></div>
+  <div class="sb-foot" id="sbFoot"></div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-l">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="hdr-div"></div>
+    <div>
+      <div class="hdr-title"><span>FullSpeed</span> Automotive</div>
+      <div class="hdr-sub">Store Service Intelligence &nbsp;·&nbsp; Marketing Performance &amp; Insights</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="hdr-date">Data window: <strong>__DATE_WINDOW__</strong></div>
+    <div class="hdr-pill" id="hPill">285 Active Stores</div>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="f-eye">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 2.5h10M4 6.5h5M6 10.5h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    Filters <span class="f-badge" id="fbadge">0</span>
+  </div>
+
+  <div class="f-grp">
+    <span class="f-lbl">Brand</span>
+    <div class="ms-wrap" id="wrap-brand">
+      <div class="ms-trig" id="trig-brand" onclick="toggleDropdown('brand')">
+        <span class="ms-txt" id="txt-brand">All Brands</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-brand">
+        <div class="ms-list" id="list-brand"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('brand')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('brand')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-sep"></div>
+
+  <div class="f-grp">
+    <span class="f-lbl">State</span>
+    <div class="ms-wrap" id="wrap-state">
+      <div class="ms-trig" id="trig-state" onclick="toggleDropdown('state')" style="min-width:100px">
+        <span class="ms-txt" id="txt-state">All States</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-state">
+        <div class="ms-dd-search"><input type="text" placeholder="Search states..." oninput="searchDD(this,'state')"></div>
+        <div class="ms-list" id="list-state"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('state')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('state')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-grp">
+    <span class="f-lbl">DMA</span>
+    <div class="ms-wrap" id="wrap-dma">
+      <div class="ms-trig" id="trig-dma" onclick="toggleDropdown('dma')" style="min-width:185px">
+        <span class="ms-txt" id="txt-dma">All DMAs</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-dma">
+        <div class="ms-dd-search"><input type="text" placeholder="Search DMAs..." oninput="searchDD(this,'dma')"></div>
+        <div class="ms-list" id="list-dma"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('dma')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('dma')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-grp">
+    <span class="f-lbl">City</span>
+    <div class="ms-wrap" id="wrap-city">
+      <div class="ms-trig" id="trig-city" onclick="toggleDropdown('city')" style="min-width:150px">
+        <span class="ms-txt" id="txt-city">All Cities</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-city">
+        <div class="ms-dd-search"><input type="text" placeholder="Search cities..." oninput="searchDD(this,'city')"></div>
+        <div class="ms-list" id="list-city"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('city')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('city')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-reset" onclick="resetAll()">
+    <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Reset All
+  </button>
+</div>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn active" id="tab-overview"     onclick="switchTab('overview')">🏪 Store Overview</button>
+  <button class="tab-btn"        id="tab-brand"        onclick="switchTab('brand')">🏷️ By Brand</button>
+  <button class="tab-btn"        id="tab-dma"          onclick="switchTab('dma')">📡 By DMA</button>
+  <button class="tab-btn"        id="tab-methodology"  onclick="switchTab('methodology')">📖 Methodology</button>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ═══ OVERVIEW ═══ -->
+<div class="panel active" id="panel-overview">
+  <div class="sum-strip">
+    <div class="sum-card"><div class="sum-icon si-r">🏪</div><div>
+      <div class="sum-lbl">Stores in View</div>
+      <div class="sum-val acc" id="sStores">285</div>
+      <div class="sum-meta" id="sMeta">of 285 total locations</div>
+    </div></div>
+    <div class="sum-card"><div class="sum-icon si-gr">📡</div><div>
+      <div class="sum-lbl">DMAs Covered</div>
+      <div class="sum-val" id="sDMAs">50</div>
+      <div class="sum-meta">designated market areas</div>
+    </div></div>
+    <div class="sum-card"><div class="sum-icon si-g">🗺️</div><div>
+      <div class="sum-lbl">States Active</div>
+      <div class="sum-val" id="sStates">24</div>
+      <div class="sum-meta">across the U.S.</div>
+    </div></div>
+    <div class="sum-card"><div class="sum-icon si-a">🏷️</div><div>
+      <div class="sum-lbl">Brands</div>
+      <div class="sum-val" id="sBrands">8</div>
+      <div class="sum-meta">franchise &amp; corporate</div>
+    </div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Service Penetration</div>
+      <div class="card-title">Category Offering Rate by Store</div>
+      <div class="card-desc">% of filtered stores with recorded transactions per category &nbsp;·&nbsp; Dec 17, 2025 – Mar 17, 2026 &nbsp;·&nbsp; Click any tile to see which stores offer that service</div>
+    </div>
+    <div class="card-body">
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="empty" id="kpiEmpty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-txt">No stores match the active filters</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="card-lbl">Store Map</div>
+        <div class="card-title">Geographic Distribution</div>
+        <div class="card-desc">Filtered locations &nbsp;·&nbsp; Click any pin for store details</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;margin-top:4px;">
+        <span style="font-size:11px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.06em;">Color by</span>
+        <div class="tog-grp">
+          <button class="tog-btn active" id="tBrand" onclick="setMode('brand')">Brand</button>
+          <button class="tog-btn"        id="tDMA"   onclick="setMode('dma')">DMA</button>
+          <button class="tog-btn"        id="tSvc"   onclick="setMode('service')">Service</button>
+        </div>
+      </div>
+    </div>
+    <div class="svc-row" id="svcRow">
+      <span class="svc-row-lbl">Highlight stores offering:</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;" id="svcChips"></div>
+    </div>
+    <div id="map"></div>
+    <div class="map-foot">
+      <div class="map-legend" id="mapLegend"></div>
+      <div class="map-cnt">Showing <span id="mapCnt">285</span> locations</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BRAND ═══ -->
+<div class="panel" id="panel-brand">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Brand Analysis</div>
+      <div class="card-title">Service Offering Rate by Brand</div>
+      <div class="card-desc">% of each brand's filtered stores offering each L1 service category &nbsp;·&nbsp; Hover any cell for store details &nbsp;·&nbsp; Click outside to dismiss</div>
+    </div>
+    <div class="card-body-flush">
+      <div class="rollup-wrap" id="brandTableWrap" style="overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 200px);border-radius:var(--r);"><div style="padding:40px;text-align:center;color:var(--text-m)">Loading...</div></div>
+    </div>
+  </div>
+  <div class="leg-strip">
+    <span><span class="leg-swatch" style="background:#ECFDF5"></span>75–100% &nbsp;Strong</span>
+    <span><span class="leg-swatch" style="background:#D1FAE5"></span>50–74% &nbsp;Good</span>
+    <span><span class="leg-swatch" style="background:#FFFBEB"></span>25–49% &nbsp;Moderate</span>
+    <span><span class="leg-swatch" style="background:#FEE2E2"></span>1–24% &nbsp;Low</span>
+    <span><span class="leg-swatch" style="background:#F9FAFB"></span>— &nbsp;None</span>
+  </div>
+</div>
+
+<!-- ═══ DMA ═══ -->
+<div class="panel" id="panel-dma">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">DMA Analysis</div>
+      <div class="card-title">Service Offering Rate by Market</div>
+      <div class="card-desc">% of each DMA's filtered stores offering each L1 category &nbsp;·&nbsp; Hover any cell for store details &nbsp;·&nbsp; 50 DMAs across 24 states</div>
+    </div>
+    <div class="card-body-flush">
+      <div class="rollup-wrap" id="dmaTableWrap" style="overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 200px);border-radius:var(--r);"><div style="padding:40px;text-align:center;color:var(--text-m)">Loading...</div></div>
+    </div>
+  </div>
+  <div class="leg-strip">
+    <span><span class="leg-swatch" style="background:#ECFDF5"></span>75–100%</span>
+    <span><span class="leg-swatch" style="background:#D1FAE5"></span>50–74%</span>
+    <span><span class="leg-swatch" style="background:#FFFBEB"></span>25–49%</span>
+    <span><span class="leg-swatch" style="background:#FEE2E2"></span>1–24%</span>
+    <span><span class="leg-swatch" style="background:#F9FAFB"></span>—</span>
+  </div>
+</div>
+
+<!-- ═══ METHODOLOGY ═══ -->
+<div class="panel" id="panel-methodology">
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">How This Works</div>
+      <div class="card-title">Data Pipeline &amp; Methodology</div>
+      <div class="card-desc">From Cinch transaction records to executive dashboard</div>
+    </div>
+    <div class="card-body">
+      <div class="method-flow">
+        <div class="m-step"><div class="m-num">1</div><div class="m-ttl">Snowflake Query</div><div class="m-desc">Pull 3-month window from Cinch. Filter on <span class="code-pill">TRANSACTION_AT</span> — actual service date, not ingestion timestamp.</div></div>
+        <div class="m-arr">→</div>
+        <div class="m-step"><div class="m-num">2</div><div class="m-ttl">Oil Exclusion</div><div class="m-desc">Remove entire transactions with oil lines. 83.6% of all transactions are oil-only visits.</div></div>
+        <div class="m-arr">→</div>
+        <div class="m-step"><div class="m-num">3</div><div class="m-ttl">Hierarchy Classification</div><div class="m-desc">Map each <span class="code-pill">ITEM_DESCR</span> to L1 + L2 via SQL <span class="code-pill">CASE/WHEN</span> pattern matching. 94% classified.</div></div>
+        <div class="m-arr">→</div>
+        <div class="m-step"><div class="m-num">4</div><div class="m-ttl">Store Enrichment</div><div class="m-desc">Add Brand (pattern match on store name) and DMA (point-in-polygon against Nielsen boundary data).</div></div>
+        <div class="m-arr">→</div>
+        <div class="m-step"><div class="m-num">5</div><div class="m-ttl">Dashboard Build</div><div class="m-desc">Aggregate to store × category grain. Embed JSON in self-contained HTML. Deploy via GitHub Pages.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Coverage Stats</div>
+      <div class="card-title">Transaction Classification Results</div>
+    </div>
+    <div class="card-body">
+      <div class="stat-grid">
+        <div class="sum-card" style="flex-direction:column;gap:4px"><div class="sum-lbl">Total Transactions</div><div class="sum-val" style="font-size:24px">526,841</div><div class="sum-meta">last 3 months · all types</div></div>
+        <div class="sum-card" style="flex-direction:column;gap:4px"><div class="sum-lbl">Oil-Excluded</div><div class="sum-val acc" style="font-size:24px">83.6%</div><div class="sum-meta">440,337 oil-change transactions removed</div></div>
+        <div class="sum-card" style="flex-direction:column;gap:4px"><div class="sum-lbl">In Service Matrix</div><div class="sum-val" style="font-size:24px">140,481</div><div class="sum-meta">non-oil transactions analyzed</div></div>
+        <div class="sum-card" style="flex-direction:column;gap:4px"><div class="sum-lbl">Classification Rate</div><div class="sum-val" style="font-size:24px;color:var(--green)">94.0%</div><div class="sum-meta">132,021 transactions mapped to hierarchy</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Service Hierarchy</div>
+      <div class="card-title">Why L1 and L2?</div>
+      <div class="card-desc"><span class="code-pill">TRANSACTIONS_DETAILS.ITEM_DESCR</span> is a free-text POS field — a mix of SKU codes, standardized names, part numbers, and technician notes. A two-level hierarchy makes this usable at both executive and operational levels.</div>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--red);margin-bottom:6px">L1 · Category Level</div>
+          <div style="font-size:12px;color:var(--text-2);line-height:1.6;margin-bottom:8px">15 broad service categories for executive reporting and KPI tracking.<br><em>Answers: "Does this store offer brake services?"</em></div>
+          <div style="font-size:11px;color:var(--text-m)">Examples: Brakes, Tires, Battery, Engine, Transmission, Fluids &amp; Cooling</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:#2563EB;margin-bottom:6px">L2 · Subcategory Level</div>
+          <div style="font-size:12px;color:var(--text-2);line-height:1.6;margin-bottom:8px">80 operational subcategories for drill-down analysis.<br><em>Answers: "Does this store do front brake pads vs. rotors vs. brake fluid?"</em></div>
+          <div style="font-size:11px;color:var(--text-m)">Examples: Brake Pads — Front, Rotors — Rear, Brake Fluid, Brake Labor</div>
+        </div>
+      </div>
+      <div class="ex-box">
+        <div class="ex-lbl">Example: How "26BB PREMIUM WIPER BLADE" gets classified</div>
+        <div class="ex-flow">
+          <span class="code-pill">ITEM_DESCR = "26BB PREMIUM WIPER BLADE"</span>
+          <span style="color:var(--text-m)">→</span>
+          <span style="font-size:12px">SQL CASE checks: <span class="code-pill">BB PREMIUM WIPER</span> matches</span>
+          <span style="color:var(--text-m)">→</span>
+          <span style="background:#47556918;color:#475569;border:1px solid #47556930;border-radius:9px;padding:3px 9px;font-size:11px;font-weight:700">L1: Wiper Blades</span>
+          <span style="color:var(--text-m)">→</span>
+          <span style="background:#47556918;color:#475569;border:1px solid #47556930;border-radius:9px;padding:3px 9px;font-size:11px;font-weight:700">L2: Front Wiper Blades</span>
+        </div>
+      </div>
+      <div id="l1CardGrid" class="l1-grid"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Classification Logic</div>
+      <div class="card-title">How ITEM_DESCR Is Matched</div>
+      <div class="card-desc">SQL <span class="code-pill">CASE/WHEN</span> on <span class="code-pill">UPPER(ITEM_DESCR)</span> — first matching rule wins</div>
+    </div>
+    <div class="card-body-flush">
+      <table class="m-table">
+        <thead><tr><th style="width:170px">L1 Category</th><th style="width:260px">Key Match Patterns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Brakes</strong></td><td><span class="code-pill">BRAKE PAD</span> <span class="code-pill">ROTOR</span> <span class="code-pill">CALIPER</span> <span class="code-pill">DOT 3/4</span></td><td>Front/Rear split by FRONT/REAR prefix. Transaction-level oil exclusion: if any line is oil, entire transaction removed.</td></tr>
+          <tr><td><strong>Tires</strong></td><td><span class="code-pill">TIRE ROTATION</span> <span class="code-pill">TPMS</span> <span class="code-pill">ALIGNMENT</span> <span class="code-pill">TIRE MOUNT</span></td><td>Replacement tracked via <span class="code-pill">!REPLACED N TIRE</span> checklist codes from POS.</td></tr>
+          <tr><td><strong>Battery</strong></td><td><span class="code-pill">DHGOL</span> <span class="code-pill">AGM PLAT</span> <span class="code-pill">DIEHARD GOLD</span> <span class="code-pill">^T[0-9]+ GOLD</span></td><td>Most battery replacement rows are DieHard SKU codes, not plain text. Regex catches the part number format.</td></tr>
+          <tr><td><strong>Air Filters</strong></td><td><span class="code-pill">^A[0-9]{4}</span> <span class="code-pill">^C[0-9]{5}</span> <span class="code-pill">AIR FILTER</span></td><td>Wix/Fram part# formats: A#### = engine air filter, C##### = cabin air filter.</td></tr>
+          <tr><td><strong>Fuel System</strong></td><td><span class="code-pill">FUEL SYSTEM CLEAN</span> <span class="code-pill">GDI FUEL</span> <span class="code-pill">FUEL JUELS</span></td><td>"FUEL JUELS" is a recurring POS typo — matched intentionally. Do not correct.</td></tr>
+          <tr><td><strong>Lighting</strong></td><td><span class="code-pill">H1–H13</span> <span class="code-pill">9003–9012</span> <span class="code-pill">194 1156 3157...</span></td><td>H-series = headlight bulbs. ANSI number codes = interior/signal bulbs.</td></tr>
+          <tr><td><strong>Wiper Blades</strong></td><td><span class="code-pill">BB PREMIUM WIPER</span> <span class="code-pill">CB WIPER</span> <span class="code-pill">\d+-[12] REAR WIPER</span></td><td>BB/CB = blade size codes (26BB, 24CB). Rear wipers use numeric size format.</td></tr>
+          <tr><td><strong>Emissions</strong></td><td><span class="code-pill">GEORGIA EMISSIONS</span> <span class="code-pill">NC STATE EMIS</span> <span class="code-pill">EMISSION CERT</span></td><td><span class="warn-pill">⚠ Note</span> 85% of this category's volume is state inspection programs (GA, TX, NC, UT) — not organic demand.</td></tr>
+          <tr><td><strong>Transmission</strong></td><td><span class="code-pill">CVT</span> <span class="code-pill">DMX GLOBAL SYN ATF</span> <span class="code-pill">TRANSMISSION FLUID</span></td><td>DMX GLOBAL SYN ATF is a specific ATF brand appearing across many stores.</td></tr>
+          <tr><td><strong>Engine</strong></td><td><span class="code-pill">SPARK PLUG</span> <span class="code-pill">IGNITION COIL</span> <span class="code-pill">VALVE COVER</span> <span class="code-pill">SERPENTINE</span></td><td>Lower-case patterns catch free-text entries: <span class="code-pill">plugs</span> <span class="code-pill">tune up</span> <span class="code-pill">belt</span>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-lbl">Known Limitations</div>
+      <div class="card-title">Data Quality Notes</div>
+    </div>
+    <div class="card-body-flush">
+      <table class="m-table">
+        <thead><tr><th style="width:230px">Issue</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ITEM_TYPE is free-text</strong></td><td>Not a controlled enum — all classification uses ITEM_DESCR pattern matching only.</td></tr>
+          <tr><td><strong>6% unclassified</strong></td><td>Long-tail single-store POS free-text (technician notes, O-rings, one-off parts). Intentionally excluded.</td></tr>
+          <tr><td><strong>Fuel System / Radiator low rates</strong></td><td>May reflect POS code mapping gaps, not true zero service provision. Flagged in prior journey analysis.</td></tr>
+          <tr><td><strong>Emissions volume inflation</strong></td><td>56,886 of 66,741 Emissions transactions are state inspection programs — not organic demand.</td></tr>
+          <tr><td><strong>2 stores manual DMA</strong></td><td>Rockport TX → Corpus Christi; Gulf Breeze FL → Mobile-Pensacola. Coordinates fell outside polygon boundaries.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /panel-methodology -->
+
+</main>
+
+<footer class="footer">
+  <div class="footer-brand"><span>FullSpeed</span> Automotive &nbsp;·&nbsp; Store Service Intelligence</div>
+  <div class="footer-meta">Marketing Performance &amp; Insights &nbsp;·&nbsp; Confidential Internal Use Only</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const RAW = __DASHBOARD_DATA__;
+
+// ═══════════════════════════════════════════════════════════
+// DATA + CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const CAT_COLORS = {
+  'Air Conditioning':'#0EA5E9','Air Filters':'#16A34A','Battery':'#D97706',
+  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections':'#4F46E5',
+  'Engine':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
+  'Lighting':'#CA8A04','Shop & Misc':'#6B7280','Suspension & Steering':'#059669',
+  'Tires':'#65A30D','Transmission':'#9333EA','Wiper Blades':'#475569',
+};
+const BRAND_COLORS = {
+  'Grease Monkey':'#C8102E','Grease Monkey (ADI)':'#9B0D22',
+  'American Lubefast':'#1D4ED8',"Uncle Ed's":'#92400E',
+  'Kwik Kar':'#D97706','SpeeDee':'#0891B2',
+  'Herbert Automotive':'#7C3AED','Economy Oil Change':'#059669',
+};
+const DMA_PAL = ['#C8102E','#1D4ED8','#059669','#D97706','#7C3AED','#0891B2',
+  '#DC2626','#16A34A','#9333EA','#0EA5E9','#B45309','#CA8A04'];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const KEYS = ['brand','state','dma','city'];
+const FIELD = {brand:'brand',state:'state',dma:'dma_name',city:'city'};
+const sel = {brand:new Set(),state:new Set(),dma:new Set(),city:new Set()};
+let filtered = RAW.stores;
+let mapMode = 'brand', activeSvc = null;
+let leafletMap = null, markers = [], mapReady = false;
+let sbCat = '', sbStores = [];
+let hoverTimer = null;
+
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'brand')       buildBrandTable();
+  if (id === 'dma')         buildDMATable();
+  if (id === 'methodology') buildL1Cards();
+  closeCtx();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FILTER ENGINE
+// ═══════════════════════════════════════════════════════════
+function getPreFiltered(excl) {
+  return RAW.stores.filter(s => {
+    for (const k of KEYS) {
+      if (k === excl) continue;
+      if (sel[k].size > 0 && !sel[k].has(s[FIELD[k]])) return false;
+    }
+    return true;
+  });
+}
+
+function buildDropdown(key) {
+  const list = document.getElementById('list-' + key);
+  const items = key === 'city'
+    ? [...new Set(getPreFiltered('city').map(s => s.city))].sort()
+    : key === 'state' ? RAW.states
+    : key === 'dma'   ? RAW.dmas
+    : RAW.brands;
+  list.innerHTML = items.map(v =>
+    `<label class="ms-item${sel[key].has(v)?' sel':''}">` +
+    `<input type="checkbox"${sel[key].has(v)?' checked':''} ` +
+    `onchange="toggleItem('${key}','${v.replace(/'/g,"\\'")}',this)">` +
+    `<span>${v}</span></label>`
+  ).join('');
+}
+
+function toggleDropdown(key) {
+  const trig = document.getElementById('trig-' + key);
+  const dd   = document.getElementById('dd-' + key);
+  const open = dd.classList.contains('open');
+  KEYS.forEach(k => {
+    document.getElementById('dd-'+k).classList.remove('open');
+    document.getElementById('trig-'+k).classList.remove('open');
+  });
+  if (!open) {
+    buildDropdown(key);
+    dd.classList.add('open');
+    trig.classList.add('open');
+  }
+}
+
+function searchDD(inp, key) {
+  const q = inp.value.toLowerCase();
+  document.getElementById('list-'+key).querySelectorAll('.ms-item').forEach(el => {
+    el.style.display = el.querySelector('span').textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function toggleItem(key, val, cb) {
+  if (cb.checked) sel[key].add(val); else sel[key].delete(val);
+  cb.closest('.ms-item').classList.toggle('sel', cb.checked);
+  updateTrigLabel(key);
+  applyFilters();
+}
+
+function updateTrigLabel(key) {
+  const txt  = document.getElementById('txt-' + key);
+  const trig = document.getElementById('trig-' + key);
+  const n = sel[key].size;
+  const defaults = {brand:'All Brands',state:'All States',dma:'All DMAs',city:'All Cities'};
+  txt.textContent = n === 0 ? defaults[key] : n === 1 ? [...sel[key]][0] : `${n} selected`;
+  let badge = trig.querySelector('.ms-cnt');
+  if (n === 0) { if (badge) badge.remove(); }
+  else {
+    if (!badge) { badge = document.createElement('span'); badge.className='ms-cnt'; trig.insertBefore(badge, trig.querySelector('.ms-caret')); }
+    badge.textContent = n;
+  }
+}
+
+function selectAll(key) {
+  const items = key === 'city' ? getPreFiltered('city').map(s=>s.city)
+    : key === 'state' ? RAW.states : key === 'dma' ? RAW.dmas : RAW.brands;
+  items.forEach(v => sel[key].add(v));
+  buildDropdown(key); updateTrigLabel(key); applyFilters();
+}
+
+function clearFilter(key) {
+  sel[key].clear(); buildDropdown(key); updateTrigLabel(key); applyFilters();
+}
+
+function resetAll() {
+  KEYS.forEach(k => { sel[k].clear(); updateTrigLabel(k); });
+  document.getElementById('fbadge').classList.remove('on');
+  activeSvc = null;
+  document.querySelectorAll('.chip').forEach(c => { c.classList.remove('active'); c.style.background=''; c.style.borderColor=''; });
+  closeSidebar(); closeCtx();
+  applyFilters();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrap')) {
+    KEYS.forEach(k => {
+      document.getElementById('dd-'+k).classList.remove('open');
+      document.getElementById('trig-'+k).classList.remove('open');
+    });
+  }
+});
+
+function applyFilters() {
+  filtered = RAW.stores.filter(s => {
+    for (const k of KEYS) {
+      if (sel[k].size > 0 && !sel[k].has(s[FIELD[k]])) return false;
+    }
+    return true;
+  });
+  const n = KEYS.filter(k => sel[k].size > 0).length;
+  const badge = document.getElementById('fbadge');
+  badge.textContent = n; badge.classList.toggle('on', n > 0);
+  updateSummary(); updateKPIs();
+  if (mapReady) updateMap();
+  // Rebuild active rollup tab
+  const at = document.querySelector('.tab-btn.active');
+  if (at) {
+    const id = at.id.replace('tab-','');
+    if (id === 'brand')       buildBrandTable();
+    if (id === 'dma')         buildDMATable();
+    if (id === 'methodology') buildL1Cards();
+  }
+  closeCtx();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════════════════════════
+function updateSummary() {
+  const n = filtered.length;
+  document.getElementById('sStores').textContent = n;
+  document.getElementById('sDMAs').textContent   = new Set(filtered.map(s=>s.dma_name)).size;
+  document.getElementById('sStates').textContent = new Set(filtered.map(s=>s.state)).size;
+  document.getElementById('sBrands').textContent = new Set(filtered.map(s=>s.brand)).size;
+  document.getElementById('hPill').textContent   = n + ' Active Stores';
+  document.getElementById('sMeta').textContent   = 'of ' + RAW.stores.length + ' total locations';
+}
+
+// ═══════════════════════════════════════════════════════════
+// KPI GRID
+// ═══════════════════════════════════════════════════════════
+function updateKPIs() {
+  const grid  = document.getElementById('kpiGrid');
+  const empty = document.getElementById('kpiEmpty');
+  const n = filtered.length;
+  if (n === 0) { grid.innerHTML=''; empty.classList.add('on'); return; }
+  empty.classList.remove('on');
+  grid.innerHTML = RAW.l1_categories.map(cat => {
+    const cnt = filtered.filter(s => s.categories && s.categories[cat] > 0).length;
+    const pct = Math.round(cnt/n*100);
+    const col = CAT_COLORS[cat] || '#6B7280';
+    const safeCat = cat.replace(/'/g, "\'");
+    return '<div class="kpi-tile" style="border-color:' + col + '22" onclick="openSidebar(\'' + safeCat + '\')">'
+      + '<div class="kpi-bar" style="background:' + col + '"></div>'
+      + '<div class="kpi-cat" style="color:' + col + '">' + cat + '</div>'
+      + '<div class="kpi-pct-row"><div class="kpi-pct">' + pct + '</div><div class="kpi-sym">%</div></div>'
+      + '<div class="kpi-track"><div class="kpi-fill" style="width:' + pct + '%;background:' + col + '"></div></div>'
+      + '<div class="kpi-stores">' + cnt + ' of ' + n + ' stores</div>'
+      + '<div class="kpi-hint" style="color:' + col + '">'
+      + '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + 'View locations</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function openSidebar(cat) {
+  sbCat = cat;
+  const col = CAT_COLORS[cat] || '#6B7280';
+  sbStores = filtered.filter(s => s.categories && s.categories[cat] > 0)
+    .sort((a,b) => (b.categories[cat]||0) - (a.categories[cat]||0));
+  const badge = document.getElementById('sbBadge');
+  badge.textContent = cat;
+  badge.style.cssText = `background:${col}18;color:${col};border:1px solid ${col}30;`;
+  document.getElementById('sbTitle').textContent = cat;
+  const pct = filtered.length > 0 ? Math.round(sbStores.length/filtered.length*100) : 0;
+  document.getElementById('sbSub').textContent =
+    `${sbStores.length} of ${filtered.length} stores (${pct}%) offer this service`;
+  document.getElementById('sbSearch').value = '';
+  renderSBList(sbStores);
+  document.getElementById('sbFoot').textContent = sbStores.length + ' locations offering ' + cat;
+  document.getElementById('sidebar').classList.add('on');
+  document.getElementById('overlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderSBList(stores) {
+  const list = document.getElementById('sbList');
+  if (!stores.length) { list.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-m);font-size:13px">No results</div>'; return; }
+  const byBrand = {};
+  stores.forEach(s => { if (!byBrand[s.brand]) byBrand[s.brand]=[]; byBrand[s.brand].push(s); });
+  let html='', i=0;
+  Object.keys(byBrand).sort().forEach(brand => {
+    const bc = BRAND_COLORS[brand]||'#C8102E';
+    html += `<div class="sb-grp-lbl" style="color:${bc}">${brand} (${byBrand[brand].length})</div>`;
+    byBrand[brand].forEach(s => {
+      i++;
+      const tx = s.categories[sbCat]||0;
+      html += `<div class="sb-item"><div class="sb-num">${i}</div>` +
+        `<div class="sb-dot" style="background:${bc}"></div>` +
+        `<div class="sb-body"><div class="sb-name">${s.store_name}</div>` +
+        `<div class="sb-det">${s.city}, ${s.state} · ${s.dma_name}</div></div>` +
+        `<div class="sb-tx">${tx.toLocaleString()} tx</div></div>`;
+    });
+  });
+  list.innerHTML = html;
+}
+
+function filterSB() {
+  const q = document.getElementById('sbSearch').value.toLowerCase();
+  renderSBList(sbStores.filter(s =>
+    s.store_name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) ||
+    s.dma_name.toLowerCase().includes(q)   || s.state.toLowerCase().includes(q)
+  ));
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('on');
+  document.getElementById('overlay').classList.remove('on');
+  document.body.style.overflow = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════════════════
+function initMap() {
+  if (typeof L === 'undefined') {
+    document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-m);font-size:13px">Map unavailable — check network connection</div>';
+    return;
+  }
+  leafletMap = L.map('map', {center:[37.5,-95],zoom:4});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {attribution:'&copy; OpenStreetMap contributors &copy; CARTO',maxZoom:19}).addTo(leafletMap);
+  mapReady = true;
+  buildChips();
+  updateMap();
+}
+
+function buildChips() {
+  document.getElementById('svcChips').innerHTML = RAW.l1_categories.map(cat => {
+    const col = CAT_COLORS[cat]||'#6B7280';
+    return `<button class="chip" onclick="toggleSvc('${cat.replace(/'/g,"\\'")}',this,'${col}')">${cat}</button>`;
+  }).join('');
+}
+
+function toggleSvc(cat, el, col) {
+  if (activeSvc===cat) {
+    activeSvc=null;
+    document.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.style.background='';c.style.borderColor='';});
+  } else {
+    activeSvc=cat;
+    document.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.style.background='';c.style.borderColor='';});
+    el.classList.add('active'); el.style.background=col; el.style.borderColor=col;
+  }
+  updateMap();
+}
+
+function setMode(m) {
+  mapMode=m;
+  ['tBrand','tDMA','tSvc'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById(m==='brand'?'tBrand':m==='dma'?'tDMA':'tSvc').classList.add('active');
+  document.getElementById('svcRow').classList.toggle('on', m==='service');
+  if (m!=='service') {
+    activeSvc=null;
+    document.querySelectorAll('.chip').forEach(c=>{c.classList.remove('active');c.style.background='';c.style.borderColor='';});
+  }
+  updateMap();
+}
+
+function markerColor(s) {
+  if (mapMode==='brand') return BRAND_COLORS[s.brand]||'#C8102E';
+  if (mapMode==='dma') {
+    let h=0; for (const c of (s.dma_name||'')) h=(h*31+c.charCodeAt(0))&0xFFFFFF;
+    return DMA_PAL[Math.abs(h)%DMA_PAL.length];
+  }
+  if (!activeSvc) return '#9CA3AF';
+  return (s.categories&&s.categories[activeSvc]>0) ? (CAT_COLORS[activeSvc]||'#059669') : '#D1D5DB';
+}
+
+function makeIcon(color, faded) {
+  const op=faded?.25:1, sh=faded?'none':`0 0 5px ${color}55`;
+  return L.divIcon({
+    html:`<div style="width:11px;height:11px;background:${color};border:2px solid rgba(255,255,255,${faded?.2:.9});border-radius:50%;opacity:${op};box-shadow:${sh}"></div>`,
+    className:'',iconSize:[11,11],iconAnchor:[5.5,5.5]
+  });
+}
+
+function updateMap() {
+  markers.forEach(m=>m.remove()); markers=[];
+  filtered.forEach(s => {
+    if (!s.lat||!s.lon) return;
+    const col = markerColor(s);
+    const faded = mapMode==='service'&&activeSvc&&!(s.categories&&s.categories[activeSvc]>0);
+    const m = L.marker([s.lat,s.lon],{icon:makeIcon(col,faded)});
+    const bc = BRAND_COLORS[s.brand]||'#C8102E';
+    const cats = Object.keys(s.categories||{}).sort();
+    m.bindPopup(`<div class="pop-inner">` +
+      `<div class="pop-store">${s.store_name}</div>` +
+      `<div class="pop-brand" style="color:${bc}">${s.brand}</div>` +
+      `<div class="pop-addr">${s.address}<br>${s.city}, ${s.state} ${s.zip}</div>` +
+      `<div class="pop-dma">DMA: <strong>${s.dma_name}</strong></div>` +
+      `<div class="pop-cats">${cats.map(c=>`<span class="pop-cat" style="background:${CAT_COLORS[c]||'#6B7280'}18;color:${CAT_COLORS[c]||'#6B7280'};border:1px solid ${CAT_COLORS[c]||'#6B7280'}30">${c}</span>`).join('')}</div>` +
+      `</div>`,{maxWidth:280});
+    m.addTo(leafletMap); markers.push(m);
+  });
+  document.getElementById('mapCnt').textContent = filtered.length;
+  updateLegend();
+}
+
+function updateLegend() {
+  const leg = document.getElementById('mapLegend');
+  if (mapMode==='brand') {
+    const bs = [...new Set(filtered.map(s=>s.brand))].sort();
+    leg.innerHTML = bs.map(b=>`<div class="leg-item"><div class="leg-dot" style="background:${BRAND_COLORS[b]||'#C8102E'}"></div>${b}</div>`).join('');
+  } else if (mapMode==='service'&&activeSvc) {
+    const col=CAT_COLORS[activeSvc]||'#059669';
+    leg.innerHTML = `<div class="leg-item"><div class="leg-dot" style="background:${col}"></div>Offers ${activeSvc}</div>` +
+      `<div class="leg-item"><div class="leg-dot" style="background:#D1D5DB"></div>Does not offer</div>`;
+  } else leg.innerHTML='';
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTEXT MENU
+// ═══════════════════════════════════════════════════════════
+let ctxStores=[], ctxCat='';
+
+function showCtx(mx, my, rowLbl, colLbl, stores, cat, col) {
+  if (!stores || !stores.length) return;
+  ctxCat = cat; ctxStores = stores;
+  const menu = document.getElementById('ctx');
+  document.getElementById('ctxTitle').textContent = rowLbl + '  ×  ' + colLbl;
+  document.getElementById('ctxSub').textContent   = stores.length + ' store' + (stores.length !== 1 ? 's' : '') + ' offering this service';
+  const badge = document.getElementById('ctxBadge');
+  badge.textContent = cat;
+  badge.style.cssText = 'background:' + col + '18;color:' + col + ';border:1px solid ' + col + '30;';
+  document.getElementById('ctxSrch').value = '';
+  renderCtxList(stores);
+  positionCtx(mx, my);
+  menu.classList.add('on');
+}
+
+function renderCtxList(stores) {
+  document.getElementById('ctxList').innerHTML = stores.map((s,i) => {
+    const bc=BRAND_COLORS[s.brand]||'#C8102E';
+    const tx=s.categories&&s.categories[ctxCat]?s.categories[ctxCat].toLocaleString()+' tx':'';
+    return `<div class="ctx-item"><div class="ctx-n">${i+1}</div>` +
+      `<div class="ctx-dot" style="background:${bc}"></div>` +
+      `<div class="ctx-body"><div class="ctx-name">${s.store_name}</div>` +
+      `<div class="ctx-det">${s.city}, ${s.state} · ${s.dma_name}</div></div>` +
+      `<div class="ctx-tx">${tx}</div></div>`;
+  }).join('');
+  document.getElementById('ctxFoot').innerHTML =
+    `<span>${stores.length} locations</span><span>Hover another cell to update</span>`;
+}
+
+function filterCtx() {
+  const q=document.getElementById('ctxSrch').value.toLowerCase();
+  renderCtxList(ctxStores.filter(s =>
+    s.store_name.toLowerCase().includes(q)||s.city.toLowerCase().includes(q)||
+    s.dma_name.toLowerCase().includes(q)||s.state.toLowerCase().includes(q)
+  ));
+}
+
+function positionCtx(mx, my) {
+  const menu = document.getElementById('ctx');
+  const pad = 12, w = 340, h = 420;
+  let x = mx + 14, y = my - 8;
+  if (x + w > window.innerWidth  - pad) x = mx - w - 6;
+  if (y + h > window.innerHeight - pad) y = window.innerHeight - h - pad;
+  if (y < pad) y = pad;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+}
+
+function closeCtx() {
+  document.getElementById('ctx').classList.remove('on');
+  document.querySelectorAll('.ch,.ca').forEach(el=>el.classList.remove('ch','ca'));
+  document.querySelectorAll('.rhl').forEach(el=>el.classList.remove('rhl'));
+  document.querySelectorAll('.rt').forEach(t=>t.classList.remove('hov'));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ctx')&&!e.target.closest('.dc')) closeCtx();
+});
+
+// ═══════════════════════════════════════════════════════════
+// ROLLUP TABLE HELPERS
+// ═══════════════════════════════════════════════════════════
+function heatCell(pct) {
+  if (pct>=75) return {bg:'#ECFDF5',ft:'#065F46',bold:true};
+  if (pct>=50) return {bg:'#D1FAE5',ft:'#065F46',bold:true};
+  if (pct>=25) return {bg:'#FFFBEB',ft:'#92400E',bold:false};
+  if (pct>0)   return {bg:'#FEE2E2',ft:'#991B1B',bold:false};
+  return {bg:'#F9FAFB',ft:'#9CA3AF',bold:false};
+}
+
+function onCellEnter(e, colIdx, rowIdx, tblId) {
+  clearTimeout(hoverTimer);
+  const tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  tbl.classList.add('hov');
+  tbl.querySelectorAll('.ch,.ca').forEach(el=>el.classList.remove('ch','ca'));
+  tbl.querySelectorAll('.rhl').forEach(el=>el.classList.remove('rhl'));
+  // Highlight column header
+  const hdrs = tbl.querySelectorAll('thead tr th');
+  if (hdrs[colIdx+1]) hdrs[colIdx+1].classList.add('ch');
+  // Highlight row
+  const row = tbl.querySelector('tr[data-ri="' + rowIdx + '"]');
+  if (row) row.classList.add('rhl');
+  // Active cell
+  const cell = e.currentTarget;           // capture NOW — stale after handler returns
+  cell.classList.add('ca');
+  cell.classList.remove('ch');
+  // Capture mouse position now — e is also stale inside setTimeout
+  const mx = e.clientX, my = e.clientY;
+  // Context menu after delay
+  hoverTimer = setTimeout(() => {
+    // cell is captured above, safe to use here
+    if (!cell || !document.body.contains(cell)) return;
+    const cat  = cell.dataset.cat;
+    const rl   = cell.dataset.rl;
+    const cl   = cell.dataset.cl;
+    const storesAttr = cell.getAttribute('data-stores') || '[]';
+    let nums;
+    try { nums = JSON.parse(storesAttr); } catch(_) { nums = []; }
+    const matched = filtered
+      .filter(s => nums.includes(s.store_number))
+      .sort((a,b) => (b.categories[cat]||0) - (a.categories[cat]||0));
+    showCtx(mx, my, rl, cl, matched, cat, CAT_COLORS[cat]||'#6B7280');
+  }, 200);
+}
+
+function onCellLeave() { /* highlights persist until outside click */ }
+
+// ═══════════════════════════════════════════════════════════
+// BRAND TABLE
+// ═══════════════════════════════════════════════════════════
+function buildBrandTable() {
+  const wrap = document.getElementById('brandTableWrap');
+  const brands = [...new Set(filtered.map(s=>s.brand))].sort();
+  if (!brands.length) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-m)">No stores match filters</div>'; return; }
+  const total = filtered.length;
+  let html = `<table class="rt" id="rtBrand"><thead><tr class="chr">` +
+    `<th class="rh corner">Service Category</th>`;
+  brands.forEach(b => {
+    const n=filtered.filter(s=>s.brand===b).length;
+    html+=`<th>${b}<br><span style="font-weight:400;font-size:10px;opacity:.6">${n} stores</span></th>`;
+  });
+  html+=`<th>All Filtered<br><span style="font-weight:400;font-size:10px;opacity:.6">${total} stores</span></th></tr></thead><tbody>`;
+  RAW.l1_categories.forEach((cat,ri) => {
+    const col=CAT_COLORS[cat]||'#6B7280';
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white);border-left:4px solid ${col}"><span class="rht">${cat}</span></td>`;
+    [...brands,'__all__'].forEach((brand,ci) => {
+      const grp = brand==='__all__' ? filtered : filtered.filter(s=>s.brand===brand);
+      const off = grp.filter(s=>s.categories&&s.categories[cat]>0);
+      const pct = grp.length>0 ? Math.round(off.length/grp.length*100) : 0;
+      const {bg,ft,bold}=heatCell(pct);
+      const rl = brand==='__all__' ? 'All Filtered' : brand;
+      const extra = brand==='__all__' ? ' style="border-left:2px solid var(--border-mid)"' : '';
+      const storeNums=JSON.stringify(off.map(s=>s.store_number));
+      html+=`<td class="dc" data-col="${ci}" data-ri="${ri}" data-cat="${cat.replace(/"/g,'&quot;')}" ` +
+        `data-rl="${rl.replace(/"/g,'&quot;')}" data-cl="${cat.replace(/"/g,'&quot;')}" data-stores='${storeNums}' ` +
+        `style="background:${bg};color:${ft};font-weight:${bold?700:400}${extra?';border-left:2px solid var(--border-mid)':''}" ` +
+        `onmouseenter="onCellEnter(event,${ci},${ri},'rtBrand')" onmouseleave="onCellLeave()">` +
+        `${pct>0?pct+'%':'—'}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+=`<tr class="sr"><td class="rh" style="background:#1F2937"><span class="rht">Total Stores</span></td>`;
+  brands.forEach(b=>{ html+=`<td>${filtered.filter(s=>s.brand===b).length}</td>`; });
+  html+=`<td>${total}</td></tr></tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// DMA TABLE
+// ═══════════════════════════════════════════════════════════
+function buildDMATable() {
+  const wrap = document.getElementById('dmaTableWrap');
+  const dmas=[...new Set(filtered.map(s=>s.dma_name).filter(d=>d&&d!=='Unknown'))].sort();
+  if (!dmas.length) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-m)">No stores match filters</div>'; return; }
+  const SHORT={'Emissions & Inspections':'Emissions','Suspension & Steering':'Suspension','Fluids & Cooling':'Fluids','Shop & Misc':'Shop/Misc'};
+  let html=`<table class="rt" id="rtDMA"><thead><tr class="chr">` +
+    `<th class="rh corner" style="min-width:200px">DMA Market</th>` +
+    `<th>Stores</th>`;
+  RAW.l1_categories.forEach(cat => {
+    const col=CAT_COLORS[cat]||'#6B7280';
+    html+=`<th style="background:${col}cc" title="${cat}">${SHORT[cat]||cat}</th>`;
+  });
+  html+=`</tr></thead><tbody>`;
+  dmas.forEach((dma,ri) => {
+    const grp=filtered.filter(s=>s.dma_name===dma);
+    html+=`<tr data-ri="${ri}"><td class="rh" style="background:var(--white)"><span class="rht">${dma}</span></td>` +
+      `<td style="font-weight:700;font-size:12px;text-align:center;background:var(--surface)">${grp.length}</td>`;
+    RAW.l1_categories.forEach((cat,ci) => {
+      const off=grp.filter(s=>s.categories&&s.categories[cat]>0);
+      const pct=grp.length>0?Math.round(off.length/grp.length*100):0;
+      const {bg,ft,bold}=heatCell(pct);
+      const nums=JSON.stringify(off.map(s=>s.store_number));
+      html+=`<td class="dc" data-col="${ci+1}" data-ri="${ri}" data-cat="${cat.replace(/"/g,'&quot;')}" ` +
+        `data-rl="${dma.replace(/"/g,'&quot;')}" data-cl="${cat.replace(/"/g,'&quot;')}" data-stores='${nums}' ` +
+        `style="background:${bg};color:${ft};font-weight:${bold?700:400}" ` +
+        `onmouseenter="onCellEnter(event,${ci+1},${ri},'rtDMA')" onmouseleave="onCellLeave()">` +
+        `${pct>0?pct+'%':'—'}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+=`<tr class="sr"><td class="rh"><span class="rht">Total Filtered</span></td><td>${filtered.length}</td>`;
+  RAW.l1_categories.forEach(cat => {
+    const cnt=filtered.filter(s=>s.categories&&s.categories[cat]>0).length;
+    const pct=filtered.length>0?Math.round(cnt/filtered.length*100):0;
+    html+=`<td>${pct>0?pct+'%':'—'}</td>`;
+  });
+  html+=`</tr></tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// METHODOLOGY
+// ═══════════════════════════════════════════════════════════
+function buildL1Cards() {
+  const grid=document.getElementById('l1CardGrid');
+  if (!grid) return;
+  const base=filtered.length?filtered:RAW.stores;
+  const n=base.length;
+  grid.innerHTML=RAW.l1_categories.map(cat=>{
+    const col=CAT_COLORS[cat]||'#6B7280';
+    const cnt=base.filter(s=>s.categories&&s.categories[cat]>0).length;
+    const pct=n>0?Math.round(cnt/n*100):0;
+    return `<div class="l1-card" style="background:${col}10;border-color:${col}30">` +
+      `<div class="l1-card-n" style="color:${col}">${cat}</div>` +
+      `<div class="l1-card-s" style="color:${col}cc">${pct}% of stores · ${cnt} locations</div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  updateSummary();
+  updateKPIs();
+  buildL1Cards();
+  setTimeout(initMap, 100);
+  // Set sticky offset CSS variable so content doesn't hide under sticky stack
+  function setStickyOffset() {
+    const hdr     = document.querySelector('.hdr');
+    const filters = document.querySelector('.filters');
+    const tabNav  = document.querySelector('.tab-nav');
+    if (!hdr) return;
+    const hh = hdr.offsetHeight;
+    const fh = filters ? filters.offsetHeight : 0;
+    const th = tabNav  ? tabNav.offsetHeight  : 0;
+    const total = hh + fh + th;
+    document.documentElement.style.setProperty('--sticky-top', total + 'px');
+    document.documentElement.style.setProperty('--hdr-h',      hh + 'px');
+    document.documentElement.style.setProperty('--filter-top', hh + 'px');
+    document.documentElement.style.setProperty('--tab-top',    (hh + fh) + 'px');
+    // Update sticky positions
+    if (filters) filters.style.top = hh + 'px';
+    if (tabNav)  tabNav.style.top  = (hh + fh) + 'px';
+    // Scroll padding so anchor links / focus don't hide behind sticky stack
+    document.documentElement.style.scrollPaddingTop = total + 8 + 'px';
+  }
+  setStickyOffset();
+  // Re-measure on resize (orientation change, font load, etc.)
+  window.addEventListener('resize', setStickyOffset);
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(setStickyOffset);
+    ['.hdr', '.filters', '.tab-nav'].forEach(sel => {
+      const el = document.querySelector(sel);
+      if (el) ro.observe(el);
+    });
+  }
+  // Re-run after fonts/layout settle on mobile Chrome
+  setTimeout(setStickyOffset, 100);
+  setTimeout(setStickyOffset, 500);
+});
+
+</script>
+</body>
+</html>
