@@ -1,0 +1,74 @@
+name: Rebuild & Deploy Dashboard
+
+on:
+  push:
+    paths:
+      - 'data/**.csv'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install shapely openpyxl
+
+      - name: Validate data file
+        id: validate
+        run: |
+          CSV=$(ls -t data/*.csv 2>/dev/null | grep -v enriched | head -1)
+          if [ -z "$CSV" ]; then
+            echo "ERROR: No CSV found in /data folder"
+            exit 1
+          fi
+          ROWS=$(wc -l < "$CSV")
+          echo "Found: $CSV ($ROWS rows)"
+          echo "csv_path=$CSV" >> $GITHUB_OUTPUT
+          echo "row_count=$ROWS" >> $GITHUB_OUTPUT
+          echo "run_date=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Enrich store data (brand + DMA + store model tier)
+        run: |
+          python scripts/enrich.py \
+            --input "${{ steps.validate.outputs.csv_path }}" \
+            --output data/store_services_enriched.csv \
+            --dma-names scripts/dma_names.csv \
+            --dma-boundaries scripts/dma_boundaries.csv \
+            --store-models scripts/store_models.csv
+
+      - name: Build dashboard HTML
+        run: |
+          python scripts/build_dashboard.py \
+            --input data/store_services_enriched.csv \
+            --output index.html
+
+      - name: Build Excel workbook
+        run: |
+          python scripts/build_excel.py \
+            --input data/store_services_enriched.csv \
+            --output "data/FSA_Store_Service_Matrix_${{ steps.validate.outputs.run_date }}.xlsx"
+
+      - name: Commit all outputs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git add "data/FSA_Store_Service_Matrix_${{ steps.validate.outputs.run_date }}.xlsx"
+          git add data/store_services_enriched.csv
+          git diff --staged --quiet || git commit -m "chore: rebuild dashboard + Excel [${{ steps.validate.outputs.run_date }}]"
+          git push
