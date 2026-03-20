@@ -80,7 +80,8 @@ def build_data_payload(csv_path):
                 "region_vp":    r.get("REGION_VP", ""),
                 "district_num": r.get("DISTRICT_NUM", ""),
                 "district_mgr": r.get("DISTRICT_MGR", ""),
-                "categories":   {},
+                "categories":     {},   # non-oil transactions only
+                "categories_all": {},   # oil-inclusive
             }
 
         l1 = r["L1_CATEGORY"]
@@ -89,7 +90,10 @@ def build_data_payload(csv_path):
                 tx = int(r["TRANSACTION_COUNT"])
             except (ValueError, KeyError):
                 tx = 0
-            stores[sn]["categories"][l1] = stores[sn]["categories"].get(l1, 0) + tx
+            is_oil = str(r.get("IS_OIL_TRANSACTION", "0")).strip() == "1"
+            stores[sn]["categories_all"][l1] = stores[sn]["categories_all"].get(l1, 0) + tx
+            if not is_oil:
+                stores[sn]["categories"][l1] = stores[sn]["categories"].get(l1, 0) + tx
 
     stores_list = sorted(stores.values(), key=lambda s: (
         int(s["store_number"]) if s["store_number"].isdigit() else 0
@@ -118,7 +122,7 @@ def build_data_payload(csv_path):
           f"{len(all_regions)} regions · {len(all_districts)} districts")
 
     return {
-        "stores":        stores_list,
+        "stores":         stores_list,
         "l1_categories":  all_l1,
         "brands":         all_brands,
         "states":         all_states,

@@ -51,18 +51,19 @@ AUTHORITATIVE_L2 = {
     'Air Conditioning':        ['A/C Service'],
     'Air Filters':             ['Cabin Air Filter', 'Engine Air Filter'],
     'Battery':                 ['Battery Fees', 'Battery Replacement', 'Battery Service', 'Starting & Charging'],
-    'Brakes':                  ['Brake Fluid', 'Brake Labor', 'Brake Pads — Front', 'Brake Pads — Rear',
+    'Brakes':                  ['Brake Labor', 'Brake Pads — Front', 'Brake Pads — Rear',
                                 'Brake Pads (General)', 'Rotors — Front', 'Rotors — Rear', 'Rotors (General)'],
     'Differentials':           ['Front Differential', 'Gear Oil', 'Rear Differential'],
     'Emissions & Inspections': ['Emissions Test', 'Vehicle Check / Inspection'],
     'Engine':                  ['Belts', 'Engine Labor', 'Engine Treatments', 'Ignition / Coils',
                                 'O2 / Sensors', 'Spark Plugs', 'Thermostat / Water Pump', 'Valve Cover Gasket'],
-    'Fluids & Cooling':        ['Coolant / Antifreeze', 'Cooling System Labor', 'Power Steering Fluid',
+    'Fluids & Cooling':        ['Brake Fluid', 'Coolant / Antifreeze', 'Cooling System Labor', 'Power Steering Fluid',
                                 'Radiator Replacement', 'Window Wash'],
     'Fuel System':             ['Fuel Filter', 'Fuel System Cleaning'],
     'Lighting':                ['Headlight Bulbs', 'Headlight Restoration', 'Interior / Signal Bulbs'],
     'Shop & Misc':             ['Car Wash', 'Lug Nut Service', 'Shop Labor', 'Shop Supplies'],
     'Suspension & Steering':   ['Suspension / Steering Labor', 'Wheel Alignment'],
+    'Oil Change':              ['Oil Change Service'],
     'Tires':                   ['Tire Disposal', 'Tire Mount & Balance', 'Tire Repair',
                                 'Tire Replacement', 'Tire Rotation', 'TPMS'],
     'Transmission':            ['Drivetrain Labor', 'Transfer Case', 'Transmission Fluid Exchange'],
@@ -177,7 +178,6 @@ def build(input_path, output_path, region_district_path=None):
         sn = r['STORE_NUMBER']
         if sn not in store_map:
             rd = region_dist.get(sn, {'REGION_NUM':'','REGION_VP':'','DISTRICT_NUM':'','DISTRICT_MGR':''})
-            # Also check enriched CSV for region columns already present
             if not rd['REGION_NUM'] and r.get('REGION_NUM'):
                 rd = {'REGION_NUM':r.get('REGION_NUM',''),'REGION_VP':r.get('REGION_VP',''),
                       'DISTRICT_NUM':r.get('DISTRICT_NUM',''),'DISTRICT_MGR':r.get('DISTRICT_MGR','')}
@@ -190,11 +190,16 @@ def build(input_path, output_path, region_district_path=None):
                 PROPOSED_MODEL=r.get('PROPOSED_MODEL',''),
                 REGION_NUM=rd['REGION_NUM'], REGION_VP=rd['REGION_VP'],
                 DISTRICT_NUM=rd['DISTRICT_NUM'], DISTRICT_MGR=rd['DISTRICT_MGR'],
-                l1_tx=defaultdict(int), l2_tx=defaultdict(int)
+                l1_tx=defaultdict(int), l2_tx=defaultdict(int),      # non-oil only
+                l1_tx_all=defaultdict(int), l2_tx_all=defaultdict(int)  # oil-inclusive
             )
         if r['OFFERS_SERVICE'] == '1':
-            store_map[sn]['l1_tx'][r['L1_CATEGORY']] += int(r['TRANSACTION_COUNT'])
-            store_map[sn]['l2_tx'][(r['L1_CATEGORY'], r['L2_SUBCATEGORY'])] += int(r['TRANSACTION_COUNT'])
+            is_oil = str(r.get('IS_OIL_TRANSACTION','0')).strip() == '1'
+            store_map[sn]['l1_tx_all'][r['L1_CATEGORY']] += int(r['TRANSACTION_COUNT'])
+            store_map[sn]['l2_tx_all'][(r['L1_CATEGORY'], r['L2_SUBCATEGORY'])] += int(r['TRANSACTION_COUNT'])
+            if not is_oil:
+                store_map[sn]['l1_tx'][r['L1_CATEGORY']] += int(r['TRANSACTION_COUNT'])
+                store_map[sn]['l2_tx'][(r['L1_CATEGORY'], r['L2_SUBCATEGORY'])] += int(r['TRANSACTION_COUNT'])
 
     stores = sorted(store_map.values(), key=lambda x: (x['REGION_NUM'] or '9', x['DISTRICT_NUM'] or '999', x['BRAND'], x['STORE_NAME']))
     n_stores = len(stores)
@@ -285,6 +290,34 @@ def build(input_path, output_path, region_district_path=None):
             c.alignment = align('center','center'); c.border = bdr()
         ws.row_dimensions[i].height = 15
 
+    ws.auto_filter.ref = f'A2:{get_column_letter(4+n_cats)}{3+n_stores}'
+
+    # ── SHEET 2b: L1 MATRIX — OIL INCLUSIVE ──────────────────────────────────
+    ws = wb.create_sheet('L1 Matrix (Oil Incl.)')
+    ws.freeze_panes = 'E4'
+    set_title(ws, f'FullSpeed Automotive — Service Matrix (Oil-Inclusive)  |  Includes services bundled with oil change visits', 4+n_cats)
+    for col, (hdr, w) in enumerate([('Store #',9),('Brand',22),('City, State',20),('DMA',26)], 1):
+        set_left_hdr(ws, 2, col, hdr, width=w)
+    for col, cat in enumerate(L1_CATS, 5):
+        set_cat_hdr(ws, 2, col, cat, rotation=60)
+    ws.row_dimensions[2].height = 80
+    set_count_label(ws, 3, 1, 4)
+    for col, cat in enumerate(L1_CATS, 5):
+        oil_stores = {r['STORE_NUMBER'] for r in rows if r['OFFERS_SERVICE']=='1' and r['L1_CATEGORY']==cat}
+        set_count_cell(ws, 3, col, len(oil_stores), CAT_COLORS.get(cat,'6B7280'))
+    for i, s in enumerate(stores, 4):
+        bg = LGREY if i % 2 == 0 else WHITE
+        for col, val in enumerate([s['STORE_NUMBER'],s['BRAND'],f"{s['CITY']}, {s['STATE']}",s['DMA_NAME']], 1):
+            c = ws.cell(row=i, column=col, value=val)
+            c.font = font(size=10, bold=(col==2), color=BLACK)
+            c.fill = fill(bg); c.alignment = align('left','center'); c.border = bdr()
+        for col, cat in enumerate(L1_CATS, 5):
+            tx = s['l1_tx_all'].get(cat, 0)
+            c = ws.cell(row=i, column=col, value=tx if tx else None)
+            c.fill = fill('EFF6FF') if tx else fill(bg)
+            c.font = font(bold=bool(tx), color='1E40AF' if tx else DGREY, size=10)
+            c.alignment = align('center','center'); c.border = bdr()
+        ws.row_dimensions[i].height = 15
     ws.auto_filter.ref = f'A2:{get_column_letter(4+n_cats)}{3+n_stores}'
 
     # ── SHEET 3: L2 SUBCATEGORY MATRIX ────────────────────────────────────────
@@ -529,7 +562,7 @@ def build(input_path, output_path, region_district_path=None):
 
     RCOLS = [('STORE_NUMBER',9),('STORE_NAME',30),('BRAND',22),('CITY',14),('STATE',6),('DMA_NAME',26),
              ('STORE_MODEL',10),('PROPOSED_MODEL',13),('L1_CATEGORY',22),('L2_SUBCATEGORY',24),
-             ('SERVICE_NAME',34),('TRANSACTION_COUNT',14)]
+             ('SERVICE_NAME',34),('TRANSACTION_COUNT',14),('IS_OIL_TRANSACTION',14)]
     for col, (hdr, w) in enumerate(RCOLS, 1):
         set_left_hdr(ws, 2, col, hdr, width=w)
     ws.row_dimensions[2].height = 18
