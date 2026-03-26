@@ -3,6 +3,12 @@ build_excel.py — FSA Store Service Intelligence Excel workbook
 --------------------------------------------------------------
 Produces a date-stamped workbook from the enriched unified CSV.
 
+v3 CHANGES (2026-03-26):
+  - Oil vs Non-Oil Discrepancy tab: replaced 'FLAG'/'Both'/'No' labels with
+    explicit 'Oil Change Only' / 'Both' / 'Non-Oil Only' / blank labels.
+    Summary row label updated to 'Stores: Oil Change Only →'.
+    Tab title updated to describe both flag states.
+
 v2 CHANGES (2026-03-26):
   - Renamed L1 'Tires' → 'Tire Services' + 'Tire Sales' (two separate L1s)
     to match SQL output. SQL produces 'Tire Services' (Rotation/Repair/TPMS/
@@ -506,15 +512,15 @@ def build(input_path, output_path, region_district_path=None):
     n_c6 = len(DISC_CATS)
     ws6.freeze_panes = get_column_letter(N_ID+1) + '4'
     set_title(ws6,
-        f'FullSpeed Automotive — Oil Change Bundling Discrepancy  |  FLAG = service appears in oil-change visits but NOT in standalone non-oil visits  |  {date_window}',
+        f'FullSpeed Automotive — Oil Change Bundling Discrepancy  |  "Oil Change Only" = service recorded only during oil change visits  |  "Non-Oil Only" = service recorded only in standalone visits  |  {date_window}',
         N_ID + n_c6)
     write_id_hdrs(ws6, 2)
     for col, cat in enumerate(DISC_CATS, N_ID+1):
         set_cat_hdr(ws6, 2, col, cat, rotation=60)
     ws6.row_dimensions[2].height = 80
 
-    # Row 3: count of flagged stores per category
-    set_count_label(ws6, 3, 1, N_ID, 'Stores with discrepancy (FLAG) →')
+    # Row 3: count of oil-change-only flagged stores per category
+    set_count_label(ws6, 3, 1, N_ID, 'Stores: Oil Change Only →')
     flag_counts = defaultdict(int)
     for s in stores:
         for cat in DISC_CATS:
@@ -528,27 +534,36 @@ def build(input_path, output_path, region_district_path=None):
         c.fill = fill(FLAG_FILL if flag_counts[cat] else MGREY)
         c.alignment = align('center','center'); c.border = bdr()
 
+    # Cell value legend:
+    #   "Oil Change Only" — service only appears on transactions that included an oil change
+    #   "Non-Oil Only"    — service only appears on standalone non-oil transactions (no oil pairing)
+    #   "Both"            — service appears in both oil-change and standalone visits
+    #   blank             — no transactions recorded at all
     for i, s in enumerate(stores, 4):
         bg = LGREY if i % 2 == 0 else WHITE
         write_id_vals(ws6, i, s, bg)
         for col, cat in enumerate(DISC_CATS, N_ID+1):
-            has_all = s['l1_tx_all'].get(cat, 0) > 0
-            has_non = s['l1_tx'].get(cat, 0) > 0
-            if has_all and not has_non:
-                # FLAG: service only present when bundled with oil change
-                c = ws6.cell(row=i, column=col, value='FLAG')
-                c.fill = fill(FLAG_FILL)
-                c.font = font(bold=True, color=FLAG_FONT, size=10)
-            elif has_non:
-                # Both: present in standalone non-oil visits too
-                c = ws6.cell(row=i, column=col, value='Both')
-                c.fill = fill(YES_FILL)
-                c.font = font(bold=False, color=YES_FONT, size=10)
+            has_all = s['l1_tx_all'].get(cat, 0) > 0   # present in any transaction (oil or not)
+            has_non = s['l1_tx'].get(cat, 0) > 0        # present in non-oil transactions only
+            has_oil_only = has_all and not has_non       # oil-change visits only
+            has_non_only = has_non and not has_all       # non-oil only (edge case: shouldn't occur since all=non+oil)
+            has_both     = has_all and has_non           # both visit types
+
+            if has_oil_only:
+                val = 'Oil Change Only'
+                f_fill = FLAG_FILL; f_font = font(bold=True, color=FLAG_FONT, size=10)
+            elif has_both:
+                val = 'Both'
+                f_fill = YES_FILL; f_font = font(bold=False, color=YES_FONT, size=10)
+            elif has_non_only:
+                val = 'Non-Oil Only'
+                f_fill = 'EFF6FF'; f_font = font(bold=False, color='1E40AF', size=10)
             else:
-                # Neither
-                c = ws6.cell(row=i, column=col, value='No')
-                c.fill = fill(bg)
-                c.font = font(color=DGREY, size=10)
+                val = None
+                f_fill = bg; f_font = font(color=DGREY, size=10)
+
+            c = ws6.cell(row=i, column=col, value=val)
+            c.fill = fill(f_fill); c.font = f_font
             c.alignment = align('center','center'); c.border = bdr()
         ws6.row_dimensions[i].height = 15
 
