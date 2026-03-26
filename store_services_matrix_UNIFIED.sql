@@ -1,5 +1,5 @@
 -- ============================================================
--- STORE SERVICE MATRIX — UNIFIED (v4)
+-- STORE SERVICE MATRIX — UNIFIED (v5)
 -- ============================================================
 -- SINGLE SOURCE OF TRUTH: Pulls all transactions including
 -- oil change visits. Oil change line items are classified as
@@ -16,15 +16,22 @@
 --   IS_OIL_TRANSACTION = 0 → pure non-oil visit
 --   L1_CATEGORY = 'Oil Change' → the oil change line itself
 --
--- v4 CHANGES (2026-03-26):
---   - BUGFIX: Removed TIE ROD from Engine L1 regex — it was
---     being caught before Suspension & Steering could evaluate
---     it. Tie Rods now correctly land in Suspension & Steering
---     L1 and Tie Rods L2.
---   - BUGFIX: Removed TIE ROD from Engine L2 regex for same
---     reason (Belt/Serpentine block also contained it).
+-- v5 CHANGES (2026-03-26):
+--   - BUGFIX: Brake Fluid moved BEFORE general Brakes catch in
+--     L1 CASE block. 'BRAKE FLUID' contains 'BRAKE' so it was
+--     being swallowed by Brakes L1 before reaching Fluids &
+--     Cooling. Now correctly lands at Fluids & Cooling → Brake Fluid.
+--   - BUGFIX (from v4): Removed TIE ROD from Engine L1/L2 regex
+--     so Tie Rods now correctly land in Suspension & Steering.
 --
--- REPLACE: store_services_matrix_UNIFIED_v3.sql (retired)
+-- COMPANION FIXES REQUIRED IN build_excel.py:
+--   - Rename L1 column 'Tires' → 'Tire Services' (SQL produces
+--     'Tire Services' not 'Tires'; use separate 'Tire Sales' col
+--     or merge both under one label)
+--   - Rename L2 column 'Fuel System Cleaning (BG44K / Injector)'
+--     → 'Fuel System Cleaner' (SQL Additives L2 label)
+--
+-- REPLACE: store_services_matrix_UNIFIED_v4.sql (retired)
 -- ============================================================
 
 WITH
@@ -82,10 +89,12 @@ classified_lines AS (
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(DHGOL|DHGO |DHSVR|DHGMP|AGM PLATM|AGM PLAT|GOLD DH|SILVER DH|H4 DIEHARD|BATTERY REPLACEMENT|DIEHARD GOLD).*' OR UPPER(td.ITEM_DESCR) RLIKE '^T[0-9]+ GOLD.*' THEN 'Battery'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%BATTERY%' THEN 'Battery'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ALTERNATOR|STARTING & CHARGING|STARTER).*' THEN 'Battery'
+            -- BRAKE FLUID must be caught BEFORE general Brakes — description contains 'BRAKE'
+            -- which would otherwise be swallowed by the Brakes L1 catch below
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE FLUID|DOT 3|DOT 4).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE|ROTOR|CALIPER).*' OR LOWER(td.ITEM_DESCR) IN ('front pads','rear pads','front brakes','rear brakes','pads','brake pads') OR UPPER(td.ITEM_DESCR) IN ('FRONT PADS','REAR PADS') THEN 'Brakes'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE REPLACEMENT|REPLACED.*TIRE|TIRE MOUNT|TIRE BALANCE|TIRE BALANCING|NEW TIRE|INSTALL.*TIRE).*' THEN 'Tire Sales'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE ROTATION|TIRE REPAIR|FLAT TIRE|TIRE DISPOSAL|TPMS|WHEEL BALANCE|TIRE INSPECTION).*' THEN 'Tire Services'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE FLUID|DOT 3|DOT 4).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ANTIFREEZE|COOLANT|RADIATOR|POWER STEERING|WINDOW WASH|WINDSHIELD WASH).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%COOLING SYSTEM LABOR%' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TRANSMISSION|TRANSFER CASE|CVT|DMX GLOBAL SYN ATF|DRIVETRAIN|HONDA DUAL PUMP FLUID|MERCON|DEXRON|AISIN ATF|\\bATF\\b|TRANS FLUID|TRANS SERV|TRANSMAX|PENNZOIL ATF).*' THEN 'Transmission'
