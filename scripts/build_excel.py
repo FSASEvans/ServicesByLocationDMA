@@ -3,6 +3,15 @@ build_excel.py — FSA Store Service Intelligence Excel workbook
 --------------------------------------------------------------
 Produces a date-stamped workbook from the enriched unified CSV.
 
+v2 CHANGES (2026-03-26):
+  - Renamed L1 'Tires' → 'Tire Services' + 'Tire Sales' (two separate L1s)
+    to match SQL output. SQL produces 'Tire Services' (Rotation/Repair/TPMS/
+    Disposal) and 'Tire Sales' (Mount/Balance/Replacement) — not 'Tires'.
+  - Renamed L2 'Fuel System Cleaning (BG44K / Injector)' → 'Fuel System Cleaning'
+    to match SQL L2_SUBCATEGORY output under Fuel System L1.
+  - Brake Fluid already listed under Fluids & Cooling (correct — SQL v5 now
+    also routes it there).
+
 Tab order:
   1. L1 Category Mix Binary        (Yes/No, non-oil)
   2. L2 Category Mix Binary        (Yes/No, non-oil)
@@ -46,7 +55,8 @@ CAT_COLORS = {
     'Oil Change':              '374151',
     'Shop & Misc':             '6B7280',
     'Suspension & Steering':   '059669',
-    'Tires':                   '65A30D',
+    'Tire Services':           '65A30D',
+    'Tire Sales':              '84CC16',
     'Transmission':            '9333EA',
     'Wiper Blades':            '475569',
     'Additives':               'D97706',
@@ -68,13 +78,13 @@ AUTHORITATIVE_L2 = {
                                 'Valve Cover Gasket', 'Wheel Bearings'],
     'Fluids & Cooling':        ['Brake Fluid', 'Coolant / Antifreeze', 'Cooling System Labor',
                                 'Power Steering Fluid', 'Radiator Replacement', 'Window Wash'],
-    'Fuel System':             ['Fuel Filter', 'Fuel System Cleaning (BG44K / Injector)'],
+    'Fuel System':             ['Fuel Filter', 'Fuel System Cleaning'],
     'Lighting':                ['Headlight Bulbs', 'Headlight Restoration', 'Interior / Signal Bulbs'],
     'Oil Change':              ['Oil Change Service'],
     'Shop & Misc':             ['Car Wash', 'Lug Nut Service', 'Shop Labor', 'Shop Supplies'],
     'Suspension & Steering':   ['Suspension / Steering Labor', 'Tie Rods', 'Wheel Alignment'],
-    'Tires':                   ['Tire Disposal', 'Tire Mount & Balance', 'Tire Repair',
-                                'Tire Replacement', 'Tire Rotation', 'TPMS'],
+    'Tire Services':           ['Tire Disposal', 'Tire Repair', 'Tire Rotation', 'TPMS'],
+    'Tire Sales':              ['Tire Mount & Balance', 'Tire Replacement'],
     'Transmission':            ['Drivetrain Labor', 'Transfer Case', 'Transmission Fluid Exchange'],
     'Wiper Blades':            ['Front Wiper Blades', 'Rear Wipers'],
 }
