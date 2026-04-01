@@ -840,7 +840,7 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
           <tr><td><strong>Wiper Blades</strong></td><td><span class="code-pill">BB PREMIUM WIPER</span> <span class="code-pill">CB WIPER</span> <span class="code-pill">\d+-[12] REAR WIPER</span></td><td>BB/CB = blade size codes (26BB, 24CB). Rear wipers use numeric size format.</td></tr>
           <tr><td><strong>Emissions</strong></td><td><span class="code-pill">GEORGIA EMISSIONS</span> <span class="code-pill">NC STATE EMIS</span> <span class="code-pill">EMISSION CERT</span></td><td><span class="warn-pill">⚠ Note</span> 85% of this category's volume is state inspection programs (GA, TX, NC, UT) — not organic demand.</td></tr>
           <tr><td><strong>Transmission</strong></td><td><span class="code-pill">CVT</span> <span class="code-pill">DMX GLOBAL SYN ATF</span> <span class="code-pill">TRANSMISSION FLUID</span></td><td>DMX GLOBAL SYN ATF is a specific ATF brand appearing across many stores.</td></tr>
-          <tr><td><strong>Engine</strong></td><td><span class="code-pill">SPARK PLUG</span> <span class="code-pill">IGNITION COIL</span> <span class="code-pill">VALVE COVER</span> <span class="code-pill">SERPENTINE</span></td><td>Lower-case patterns catch free-text entries: <span class="code-pill">plugs</span> <span class="code-pill">tune up</span> <span class="code-pill">belt</span>.</td></tr>
+          <tr><td><strong>Engine Maintenance</strong></td><td><span class="code-pill">SPARK PLUG</span> <span class="code-pill">IGNITION COIL</span> <span class="code-pill">VALVE COVER</span> <span class="code-pill">SERPENTINE</span></td><td>Lower-case patterns catch free-text entries: <span class="code-pill">plugs</span> <span class="code-pill">tune up</span> <span class="code-pill">belt</span>.</td></tr>
         </tbody>
       </table>
     </div>
@@ -883,8 +883,8 @@ const RAW = __DASHBOARD_DATA__;
 // ═══════════════════════════════════════════════════════════
 const CAT_COLORS = {
   'Air Conditioning':'#0EA5E9','Air Filters':'#16A34A','Battery':'#D97706',
-  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections':'#4F46E5',
-  'Engine':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
+  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections*':'#4F46E5',
+  'Engine Maintenance':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
   'Lighting':'#CA8A04','Shop & Misc':'#6B7280','Suspension & Steering':'#059669',
   'Tires':'#65A30D','Transmission':'#9333EA','Wiper Blades':'#475569',
 };
@@ -1423,7 +1423,7 @@ function buildDMATable() {
   const wrap = document.getElementById('dmaTableWrap');
   const dmas=[...new Set(filtered.map(s=>s.dma_name).filter(d=>d&&d!=='Unknown'))].sort();
   if (!dmas.length) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-m)">No stores match filters</div>'; return; }
-  const SHORT={'Emissions & Inspections':'Emissions','Suspension & Steering':'Suspension','Fluids & Cooling':'Fluids','Shop & Misc':'Shop/Misc'};
+  const SHORT={'Emissions & Inspections*':'Emissions','Suspension & Steering':'Suspension','Fluids & Cooling':'Fluids','Shop & Misc':'Shop/Misc'};
   let html=`<table class="rt" id="rtDMA"><thead><tr class="chr">` +
     `<th class="rh corner" style="min-width:200px">DMA Market</th>` +
     `<th>Stores</th>`;
