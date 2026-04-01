@@ -232,9 +232,15 @@ def build(input_path, output_path, region_district_path=None):
                 # oil-inclusive accumulators
                 l1_tx_all=defaultdict(int), l2_tx_all=defaultdict(int),
             )
+        # Normalize legacy category names → current names
+        CATEGORY_RENAMES = {
+            'Engine': 'Engine Maintenance',
+            'Emissions & Inspections': 'Emissions & Inspections*',
+        }
         if r.get('OFFERS_SERVICE') == '1':
             is_oil = str(r.get('IS_OIL_TRANSACTION','0')).strip() == '1'
-            cat = r['L1_CATEGORY']; sub = r.get('L2_SUBCATEGORY','')
+            cat = CATEGORY_RENAMES.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
+            sub = r.get('L2_SUBCATEGORY','')
             try: tx = int(r['TRANSACTION_COUNT'])
             except: tx = 0
             store_map[sn]['l1_tx_all'][cat] += tx
@@ -258,12 +264,14 @@ def build(input_path, output_path, region_district_path=None):
     dma_stores   = defaultdict(set); dma_l1   = defaultdict(lambda: defaultdict(set))
 
     for r in rows:
+        _cat_norm = {'Engine':'Engine Maintenance','Emissions & Inspections':'Emissions & Inspections*'}
         if r.get('OFFERS_SERVICE') == '1' and str(r.get('IS_OIL_TRANSACTION','0')).strip() != '1':
-            l1_stats[r['L1_CATEGORY']]['stores'].add(r['STORE_NUMBER'])
-            l1_stats[r['L1_CATEGORY']]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+            _l1 = _cat_norm.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
+            l1_stats[_l1]['stores'].add(r['STORE_NUMBER'])
+            l1_stats[_l1]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
             if r.get('L2_SUBCATEGORY'):
-                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
-                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
+                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
 
     for s in stores:
         brand_stores[s['BRAND']].add(s['STORE_NUMBER'])
