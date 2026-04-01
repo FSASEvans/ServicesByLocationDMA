@@ -1,5 +1,5 @@
 -- ============================================================
--- STORE SERVICE MATRIX — UNIFIED (v5)
+-- STORE SERVICE MATRIX — UNIFIED (v3)
 -- ============================================================
 -- SINGLE SOURCE OF TRUTH: Pulls all transactions including
 -- oil change visits. Oil change line items are classified as
@@ -16,22 +16,8 @@
 --   IS_OIL_TRANSACTION = 0 → pure non-oil visit
 --   L1_CATEGORY = 'Oil Change' → the oil change line itself
 --
--- v5 CHANGES (2026-03-26):
---   - BUGFIX: Brake Fluid moved BEFORE general Brakes catch in
---     L1 CASE block. 'BRAKE FLUID' contains 'BRAKE' so it was
---     being swallowed by Brakes L1 before reaching Fluids &
---     Cooling. Now correctly lands at Fluids & Cooling → Brake Fluid.
---   - BUGFIX (from v4): Removed TIE ROD from Engine L1/L2 regex
---     so Tie Rods now correctly land in Suspension & Steering.
---
--- COMPANION FIXES REQUIRED IN build_excel.py:
---   - Rename L1 column 'Tires' → 'Tire Services' (SQL produces
---     'Tire Services' not 'Tires'; use separate 'Tire Sales' col
---     or merge both under one label)
---   - Rename L2 column 'Fuel System Cleaning (BG44K / Injector)'
---     → 'Fuel System Cleaner' (SQL Additives L2 label)
---
--- REPLACE: store_services_matrix_UNIFIED_v4.sql (retired)
+-- REPLACE: store_services_matrix_v_FILTERS.sql (retired)
+--          store_services_matrix_ALL_TRANSACTIONS.sql (retired)
 -- ============================================================
 
 WITH
@@ -82,6 +68,7 @@ classified_lines AS (
                  OR UPPER(td.ITEM_DESCR) LIKE '%OIL AND FILTER%'
                  OR UPPER(td.ITEM_DESCR) LIKE '%OIL/FILTER%'
                                                                 THEN 'Oil Change'
+            -- All other categories identical to v_FILTERS version
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(H1 |H3 |H4 |H7 |H7-|H8|H9|H10|H11|H13|9003|9004|9005|9006|9007|9008|9012|HALOGEN BULB|HEADLIGHT BULB).*' THEN 'Lighting'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(168 |194 |194N|906 |912 |921 |1156|1157|2057|2357|3057|3157|3457|3757|4157|6418|7440|7443|7444|LIGHT BULB|BULB).*' THEN 'Lighting'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%HEADLIGHT RESTORATION%' THEN 'Lighting'
@@ -89,26 +76,22 @@ classified_lines AS (
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(DHGOL|DHGO |DHSVR|DHGMP|AGM PLATM|AGM PLAT|GOLD DH|SILVER DH|H4 DIEHARD|BATTERY REPLACEMENT|DIEHARD GOLD).*' OR UPPER(td.ITEM_DESCR) RLIKE '^T[0-9]+ GOLD.*' THEN 'Battery'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%BATTERY%' THEN 'Battery'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ALTERNATOR|STARTING & CHARGING|STARTER).*' THEN 'Battery'
-            -- BRAKE FLUID must be caught BEFORE general Brakes — description contains 'BRAKE'
-            -- which would otherwise be swallowed by the Brakes L1 catch below
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE FLUID|DOT 3|DOT 4).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE|ROTOR|CALIPER).*' OR LOWER(td.ITEM_DESCR) IN ('front pads','rear pads','front brakes','rear brakes','pads','brake pads') OR UPPER(td.ITEM_DESCR) IN ('FRONT PADS','REAR PADS') THEN 'Brakes'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE REPLACEMENT|REPLACED.*TIRE|TIRE MOUNT|TIRE BALANCE|TIRE BALANCING|NEW TIRE|INSTALL.*TIRE).*' THEN 'Tire Sales'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE ROTATION|TIRE REPAIR|FLAT TIRE|TIRE DISPOSAL|TPMS|WHEEL BALANCE|TIRE INSPECTION).*' THEN 'Tire Services'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE FLUID|DOT 3|DOT 4).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ANTIFREEZE|COOLANT|RADIATOR|POWER STEERING|WINDOW WASH|WINDSHIELD WASH).*' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%COOLING SYSTEM LABOR%' THEN 'Fluids & Cooling'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TRANSMISSION|TRANSFER CASE|CVT|DMX GLOBAL SYN ATF|DRIVETRAIN|HONDA DUAL PUMP FLUID|MERCON|DEXRON|AISIN ATF|\\bATF\\b|TRANS FLUID|TRANS SERV|TRANSMAX|PENNZOIL ATF).*' THEN 'Transmission'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(DIFFERENTIAL|GEARBOX|GEAR OIL|GEAR LUBE|AXLE OIL|AXLE FLUID|GL5|GL-5|75W-90|75W90|75W-140|75W140|80W-90|80W90|LIMITED SLIP|DIFF FLUID|DIFF OIL).*' THEN 'Differentials'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(OIL SYSTEM CLEAN|ENGINE CLEANER|ENGINE MAX|ENGINE TREATMENT|STOP LEAK|HIGH MILEAGE|\\bHMT\\b|FUEL SYSTEM CLEAN|FUEL JUELS|\\bFJ\\b|ENGINE FLUSH|\\bEFS\\b).*' THEN 'Additives'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(OIL SYSTEM CLEAN|ENGINE CLEANER|ENGINE MAX|ENGINE TREATMENT|STOP LEAK|HIGH MILEAGE|\bHMT\b|FUEL SYSTEM CLEAN|FUEL JUELS|\bFJ\b|ENGINE FLUSH|\bEFS\b).*' THEN 'Additives'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(FUEL FILTER|GDI FUEL|INJECTOR CLEAN|THROTTLE BODY CLEAN|BG 44K|BG44K|FUEL INDUCTION|CARBON CLEAN).*' OR UPPER(td.ITEM_DESCR) RLIKE '^F[0-9]{5}.*' THEN 'Fuel System'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%CABIN AIR FILTER%' OR LOWER(td.ITEM_DESCR) IN ('cabin filter','cabin air filter') OR UPPER(td.ITEM_DESCR) RLIKE '^C[0-9]{5}.*' THEN 'Air Filters'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%AIR FILTER%' OR UPPER(td.ITEM_DESCR) RLIKE '^A[0-9]{4}.*' THEN 'Air Filters'
-            -- ENGINE: TIE ROD removed — must reach Suspension & Steering below
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SPARK PLUG|IGNITION COIL|IGNITION LABOR|COIL PAK|SERPENTINE|BELT TENSION|DRIVE BELT|VALVE COVER|THERMOSTAT|WATER PUMP|OIL PRESSURE|OIL PAN|MASS AIR FLOW|CV AXLE|ENGINE LABOR|ENGINE DIAGNOSTIC|COOLING SYSTEM LABOR|OVERLAP LABOR|EXHAUST LABOR|O2 SENSOR|02 SENSOR|OXYGEN SENSOR|DOWN STREAM|UP STREAM|BANK.*SENSOR|PCV VALVE|BLOWER MOTOR|PURGE VALVE|FUEL PUMP|INTAKE MANIFOLD|HEATER HOSE|MOTOR MOUNT|CLUTCH|WHEEL BEARING|BALL JOINT|CATALYTIC|HOSE REPLACE).*' THEN 'Engine'
-            WHEN LOWER(td.ITEM_DESCR) IN ('belt','serp belt','idler pulley','sparkplugs','plugs','tune up','coil packs') THEN 'Engine'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SPARK PLUG|IGNITION COIL|IGNITION LABOR|COIL PAK|SERPENTINE|BELT TENSION|DRIVE BELT|VALVE COVER|THERMOSTAT|WATER PUMP|OIL PRESSURE|OIL PAN|MASS AIR FLOW|CV AXLE|ENGINE LABOR|ENGINE DIAGNOSTIC|COOLING SYSTEM LABOR|OVERLAP LABOR|EXHAUST LABOR|O2 SENSOR|02 SENSOR|OXYGEN SENSOR|DOWN STREAM|UP STREAM|BANK.*SENSOR|PCV VALVE|BLOWER MOTOR|PURGE VALVE|FUEL PUMP|INTAKE MANIFOLD|HEATER HOSE|MOTOR MOUNT|CLUTCH|WHEEL BEARING|BALL JOINT|CATALYTIC|TIE ROD|HOSE REPLACE).*' THEN 'Engine Maintenance'
+            WHEN LOWER(td.ITEM_DESCR) IN ('belt','serp belt','idler pulley','sparkplugs','plugs','tune up','coil packs') THEN 'Engine Maintenance'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(EMISSIONS|EMISSION CERTIFICATE|EMISSION STICKER|SAFETY STICKER|NC STATE|INSPECTION|VEHICLE CHECK|DIAGNOSTIC|SERVICE CHECKLIST|ON THE SPOT RENEWAL|UBER VEHICLE|FAILED NC STATE).*' THEN 'Emissions & Inspections'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(AIR CONDITION|REFRIGERANT|R-134|R134|A/C COMPRESSOR|AC COMPRESSOR).*' THEN 'Air Conditioning'
-            -- SUSPENSION & STEERING: TIE ROD now correctly evaluated here
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SUSPENSION|STEERING LABOR|LOWER CONTROL ARM|UPPER CONTROL ARM|SWAY BAR|STRUT|WHEEL HUB|TIE ROD|WHEEL STUD|ALIGNMENT).*' THEN 'Suspension & Steering'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SHOP SUPPLIES|SHOP LABOR|MISC.*LABOR|LUG NUT|LABOR.*NO CHARGE|CAR WASH|SPECIAL FILTER|INSTALL).*' THEN 'Shop & Misc'
             WHEN LOWER(td.ITEM_DESCR) IN ('install','labor','cust own','top off') THEN 'Shop & Misc'
@@ -124,23 +107,32 @@ classified_lines AS (
                  OR UPPER(td.ITEM_DESCR) LIKE '%OIL & FILTER%'
                  OR UPPER(td.ITEM_DESCR) LIKE '%OIL AND FILTER%'
                  OR UPPER(td.ITEM_DESCR) LIKE '%OIL/FILTER%'              THEN 'Oil Change Service'
+            -- All L2 rules identical to v_FILTERS version below
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(H1 |H3 |H4 |H7 |H7-|H8|H9|H10|H11|H13|9003|9004|9005|9006|9007|9008|9012|HALOGEN BULB|HEADLIGHT BULB).*' THEN 'Headlight Bulbs'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(168 |194 |194N|906 |912 |921 |1156|1157|2057|2357|3057|3157|3457|3757|4157|6418|7440|7443|7444|LIGHT BULB|BULB).*' THEN 'Other Bulbs'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(168 |194 |194N|906 |912 |921 |1156|1157|2057|2357|3057|3157|3457|3757|4157|6418|7440|7443|7444|LIGHT BULB|BULB).*' THEN 'Interior / Signal Bulbs'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%HEADLIGHT RESTORATION%' THEN 'Headlight Restoration'
-            WHEN UPPER(td.ITEM_DESCR) LIKE '%WIPER BLADE%' OR UPPER(td.ITEM_DESCR) LIKE '%BB PREMIUM WIPER%' OR UPPER(td.ITEM_DESCR) LIKE '%CB WIPER%' OR UPPER(td.ITEM_DESCR) RLIKE '.*\\d+-[12] REAR WIPER.*' THEN 'Wiper Blades'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(DHGOL|DHGO |DHSVR|DHGMP|AGM PLATM|AGM PLAT|GOLD DH|SILVER DH|H4 DIEHARD|DIEHARD GOLD).*' OR UPPER(td.ITEM_DESCR) RLIKE '^T[0-9]+ GOLD.*' THEN 'Battery Replacement'
-            WHEN UPPER(td.ITEM_DESCR) LIKE '%BATTERY%' THEN 'Battery Replacement'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ALTERNATOR|STARTING & CHARGING|STARTER).*' THEN 'Battery Testing'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE|ROTOR|CALIPER).*' OR LOWER(td.ITEM_DESCR) IN ('front pads','rear pads','front brakes','rear brakes','pads','brake pads') THEN 'Brake Pads / Rotors'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE REPLACEMENT|REPLACED.*TIRE|TIRE MOUNT|TIRE BALANCE|TIRE BALANCING|NEW TIRE|INSTALL.*TIRE).*' THEN 'Tire Sales/Mount/Balance'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*\\d+-[12] REAR WIPER.*' OR UPPER(td.ITEM_DESCR) LIKE '%REAR WIPER%' THEN 'Rear Wipers'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%WIPER BLADE%' OR UPPER(td.ITEM_DESCR) LIKE '%BB PREMIUM WIPER%' OR UPPER(td.ITEM_DESCR) LIKE '%CB WIPER%' THEN 'Front Wiper Blades'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(DHGOL|DHGO |DHSVR|DHGMP|AGM PLATM|AGM PLAT|GOLD DH|SILVER DH|H4 DIEHARD|BATTERY REPLACEMENT|DIEHARD GOLD).*' OR UPPER(td.ITEM_DESCR) RLIKE '^T[0-9]+ GOLD.*' THEN 'Battery Replacement'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%BATTERY SALES FEE%' OR UPPER(td.ITEM_DESCR) LIKE '%STATE BATTERY%' OR UPPER(td.ITEM_DESCR) LIKE '%TEXAS BATTERY%' THEN 'Battery Fees'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ALTERNATOR|STARTING & CHARGING|STARTER).*' THEN 'Starting & Charging'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%BATTERY%' THEN 'Battery Service'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(FRONT BRAKE PAD|FRONT PADS|FRONT BRAKES|FRONT BRAKE REPLACE|FRONT BRAKE WILD).*' OR LOWER(td.ITEM_DESCR) IN ('front pads','front brake pads','front brakes') THEN 'Brake Pads — Front'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(REAR BRAKE PAD|REAR PADS|REAR BRAKES|REAR BRAKE REPLACE|REAR BRAKE WILD).*' OR LOWER(td.ITEM_DESCR) IN ('rear pads','rear brake pads','rear brakes','pads') THEN 'Brake Pads — Rear'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(FRONT ROTOR|FRONT BRAKE ROTOR).*' THEN 'Rotors — Front'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(REAR ROTOR|REAR BRAKE ROTOR).*' THEN 'Rotors — Rear'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%ROTOR%' THEN 'Rotors (General)'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE LABOR|BRAKE INSPECTION|CALIPER|CHECKLIST).*' THEN 'Brake Labor'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%BRAKE PAD%' OR LOWER(td.ITEM_DESCR)='brake pads' THEN 'Brake Pads (General)'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(REPLACED.*TIRE|TIRE REPLACEMENT|NEW TIRE|INSTALL.*TIRE).*' THEN 'Tire Replacement'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE MOUNT|TIRE BALANCE|TIRE BALANCING).*' THEN 'Tire Mount & Balance'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%TIRE ROTATION%' THEN 'Tire Rotation'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(FLAT TIRE|TIRE REPAIR).*' THEN 'Tire Repair'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%TIRE DISPOSAL%' THEN 'Tire Disposal'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE ROTATION).*' THEN 'Tire Rotation'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIRE REPAIR|FLAT TIRE).*' THEN 'Tire Repair'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TPMS).*' THEN 'TPMS'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(WHEEL BALANCE|TIRE INSPECTION).*' THEN 'Wheel Balance / Inspection'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%TPMS%' THEN 'TPMS'
+            WHEN UPPER(td.ITEM_DESCR) LIKE '%ALIGNMENT%' THEN 'Wheel Alignment'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(BRAKE FLUID|DOT 3|DOT 4).*' THEN 'Brake Fluid'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ANTIFREEZE|COOLANT).*' THEN 'Coolant / Antifreeze Service'
-            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(RADIATOR SERVICE|RADIATOR FLUSH|RADIATOR SERVICE).*' OR (UPPER(td.ITEM_DESCR) LIKE '%RADIATOR%' AND UPPER(td.ITEM_DESCR) LIKE '%SERVICE%') THEN 'Radiator Service'
+            WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ANTIFREEZE|COOLANT|RADIATOR SERVICE).*' THEN 'Coolant / Antifreeze'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(RADIATOR).*' AND UPPER(td.ITEM_DESCR) NOT LIKE '%SERVICE%' THEN 'Radiator Replacement'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%COOLING SYSTEM LABOR%' THEN 'Cooling System Labor'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%POWER STEERING%' THEN 'Power Steering Fluid'
@@ -163,7 +155,6 @@ classified_lines AS (
             WHEN UPPER(td.ITEM_DESCR) LIKE '%AIR FILTER%' OR UPPER(td.ITEM_DESCR) RLIKE '^A[0-9]{4}.*' THEN 'Engine Air Filter'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SPARK PLUG|COIL PAK).*' OR LOWER(td.ITEM_DESCR) IN ('sparkplugs','plugs','tune up') THEN 'Spark Plugs'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(IGNITION COIL|IGNITION LABOR|COIL PACK).*' THEN 'Ignition / Coils'
-            -- BELTS: TIE ROD removed from this block
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SERPENTINE|BELT TENSION|DRIVE BELT|COOLING SYSTEM LABOR|OVERLAP LABOR|EXHAUST LABOR).*' OR LOWER(td.ITEM_DESCR) IN ('belt','serp belt','idler pulley') THEN 'Belts'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(ENGINE LABOR|ENGINE DIAGNOSTIC).*' THEN 'Engine Labor'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(CLUTCH|CYLINDER REPLACE).*' THEN 'Clutch / Cylinder'
@@ -177,7 +168,6 @@ classified_lines AS (
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(EMISSIONS|EMISSION CERTIFICATE|EMISSION STICKER|SAFETY STICKER|NC STATE|FAILED NC STATE|ON THE SPOT RENEWAL).*' THEN 'Emissions Test'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(VEHICLE CHECK|DIAGNOSTIC|SERVICE CHECKLIST|INSPECTION|UBER VEHICLE).*' THEN 'Vehicle Check / Inspection'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(AIR CONDITION|REFRIGERANT|R-134|R134|A/C COMPRESSOR|AC COMPRESSOR).*' THEN 'A/C Service'
-            -- TIE RODS: now reachable — no longer shadowed by Engine block above
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(TIE ROD).*' THEN 'Tie Rods'
             WHEN UPPER(td.ITEM_DESCR) RLIKE '.*(SUSPENSION|STEERING LABOR|LOWER CONTROL ARM|UPPER CONTROL ARM|SWAY BAR|STRUT|WHEEL HUB|WHEEL STUD).*' THEN 'Suspension / Steering Labor'
             WHEN UPPER(td.ITEM_DESCR) LIKE '%SHOP SUPPLIES%' THEN 'Shop Supplies'
@@ -241,6 +231,11 @@ final AS (
         SERVICE_CODE,
         SERVICE_NAME,
         IS_OIL_TRANSACTION,
+        -- Flag stores in states with mandatory vehicle inspection programs.
+        -- Emissions & Inspections transactions in these states reflect regulatory
+        -- requirements, not marketable services. Use to filter from marketing views.
+        CASE WHEN STATE IN ('CO','WA','GA','TX','NC','UT','VA','MO','MD','PA','NY','NJ','CT','MA','RI','DE','VT','NH','ME')
+             THEN 1 ELSE 0 END          AS IS_INSPECTION_STATE,
         COUNT(DISTINCT TRANSACTION_ID)  AS TRANSACTION_COUNT,
         1                               AS OFFERS_SERVICE
     FROM with_store
@@ -249,7 +244,9 @@ final AS (
         STORE_NUMBER, STORE_NAME, STORE_NAME_FULL,
         CITY, STATE, LATITUDE, LONGITUDE, ADDRESS1, ZIP_CODE,
         L1_CATEGORY, L2_SUBCATEGORY, SERVICE_CODE, SERVICE_NAME,
-        IS_OIL_TRANSACTION
+        IS_OIL_TRANSACTION,
+        CASE WHEN STATE IN ('CO','WA','GA','TX','NC','UT','VA','MO','MD','PA','NY','NJ','CT','MA','RI','DE','VT','NH','ME')
+             THEN 1 ELSE 0 END
 )
 
 SELECT * FROM final
