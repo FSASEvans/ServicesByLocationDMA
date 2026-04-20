@@ -46,7 +46,8 @@ CAT_COLORS = {
     'Oil Change':              '374151',
     'Shop & Misc':             '6B7280',
     'Suspension & Steering':   '059669',
-    'Tires':                   '65A30D',
+    'Tire Sales':              '65A30D',
+    'Tire Services':           '84CC16',
     'Transmission':            '9333EA',
     'Wiper Blades':            '475569',
     'Additives':               'D97706',
@@ -61,8 +62,8 @@ AUTHORITATIVE_L2 = {
     'Brakes':                  ['Brake Labor', 'Brake Pads — Front', 'Brake Pads — Rear',
                                 'Brake Pads (General)', 'Rotors — Front', 'Rotors — Rear', 'Rotors (General)'],
     'Differentials':           ['Front Differential', 'Gear Oil', 'Rear Differential'],
-    'Emissions & Inspections': ['Emissions Test', 'Vehicle Check / Inspection'],
-    'Engine':                  ['Belts', 'Ball Joints', 'Catalytic Converter', 'Clutch / Cylinder',
+    'Emissions & Inspections*': ['Emissions Test', 'Vehicle Check / Inspection'],
+    'Engine Maintenance':       ['Belts', 'Ball Joints', 'Catalytic Converter', 'Clutch / Cylinder',
                                 'Engine Labor', 'Hose Replacement', 'Ignition / Coils',
                                 'O2 / Sensors', 'Spark Plugs', 'Thermostat / Water Pump',
                                 'Valve Cover Gasket', 'Wheel Bearings'],
@@ -73,8 +74,8 @@ AUTHORITATIVE_L2 = {
     'Oil Change':              ['Oil Change Service'],
     'Shop & Misc':             ['Car Wash', 'Lug Nut Service', 'Shop Labor', 'Shop Supplies'],
     'Suspension & Steering':   ['Suspension / Steering Labor', 'Tie Rods', 'Wheel Alignment'],
-    'Tires':                   ['Tire Disposal', 'Tire Mount & Balance', 'Tire Repair',
-                                'Tire Replacement', 'Tire Rotation', 'TPMS'],
+    'Tire Sales':              ['Tire Mount & Balance', 'Tire Replacement'],
+    'Tire Services':           ['Tire Disposal', 'Tire Repair', 'Tire Rotation', 'TPMS'],
     'Transmission':            ['Drivetrain Labor', 'Transfer Case', 'Transmission Fluid Exchange'],
     'Wiper Blades':            ['Front Wiper Blades', 'Rear Wipers'],
 }
@@ -232,9 +233,15 @@ def build(input_path, output_path, region_district_path=None):
                 # oil-inclusive accumulators
                 l1_tx_all=defaultdict(int), l2_tx_all=defaultdict(int),
             )
+        # Normalize legacy category names → current names
+        CATEGORY_RENAMES = {
+            'Engine': 'Engine Maintenance',
+            'Emissions & Inspections': 'Emissions & Inspections*',
+        }
         if r.get('OFFERS_SERVICE') == '1':
             is_oil = str(r.get('IS_OIL_TRANSACTION','0')).strip() == '1'
-            cat = r['L1_CATEGORY']; sub = r.get('L2_SUBCATEGORY','')
+            cat = CATEGORY_RENAMES.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
+            sub = r.get('L2_SUBCATEGORY','')
             try: tx = int(r['TRANSACTION_COUNT'])
             except: tx = 0
             store_map[sn]['l1_tx_all'][cat] += tx
@@ -258,12 +265,14 @@ def build(input_path, output_path, region_district_path=None):
     dma_stores   = defaultdict(set); dma_l1   = defaultdict(lambda: defaultdict(set))
 
     for r in rows:
+        _cat_norm = {'Engine':'Engine Maintenance','Emissions & Inspections':'Emissions & Inspections*'}
         if r.get('OFFERS_SERVICE') == '1' and str(r.get('IS_OIL_TRANSACTION','0')).strip() != '1':
-            l1_stats[r['L1_CATEGORY']]['stores'].add(r['STORE_NUMBER'])
-            l1_stats[r['L1_CATEGORY']]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+            _l1 = _cat_norm.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
+            l1_stats[_l1]['stores'].add(r['STORE_NUMBER'])
+            l1_stats[_l1]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
             if r.get('L2_SUBCATEGORY'):
-                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
-                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
+                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
 
     for s in stores:
         brand_stores[s['BRAND']].add(s['STORE_NUMBER'])
