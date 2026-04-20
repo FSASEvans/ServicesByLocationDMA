@@ -84,11 +84,7 @@ def build_data_payload(csv_path):
                 "categories_all": {},   # oil-inclusive
             }
 
-        # Normalize legacy category names → current names
-        CATEGORY_RENAMES = {
-            "Engine": "Engine Maintenance",
-            "Emissions & Inspections": "Emissions & Inspections*",
-        }
+        CATEGORY_RENAMES = {"Engine":"Engine Maintenance","Emissions & Inspections":"Emissions & Inspections*"}
         l1 = CATEGORY_RENAMES.get(r["L1_CATEGORY"], r["L1_CATEGORY"])
         if l1 and l1 != "Other":
             try:

@@ -38,7 +38,7 @@ CAT_COLORS = {
     'Battery':                 'D97706',
     'Brakes':                  'DC2626',
     'Differentials':           '7C3AED',
-    'Emissions & Inspections*':'4F46E5',   # asterisk = state program flag
+    'Emissions & Inspections': '4F46E5',
     'Engine Maintenance':        '2563EB',
     'Fluids & Cooling':        '0891B2',
     'Fuel System':             'B45309',
@@ -61,8 +61,8 @@ AUTHORITATIVE_L2 = {
     'Brakes':                  ['Brake Labor', 'Brake Pads — Front', 'Brake Pads — Rear',
                                 'Brake Pads (General)', 'Rotors — Front', 'Rotors — Rear', 'Rotors (General)'],
     'Differentials':           ['Front Differential', 'Gear Oil', 'Rear Differential'],
-    'Emissions & Inspections*': ['Emissions Test', 'Vehicle Check / Inspection'],
-    'Engine Maintenance':       ['Belts', 'Ball Joints', 'Catalytic Converter', 'Clutch / Cylinder',
+    'Emissions & Inspections': ['Emissions Test', 'Vehicle Check / Inspection'],
+    'Engine':                  ['Belts', 'Ball Joints', 'Catalytic Converter', 'Clutch / Cylinder',
                                 'Engine Labor', 'Hose Replacement', 'Ignition / Coils',
                                 'O2 / Sensors', 'Spark Plugs', 'Thermostat / Water Pump',
                                 'Valve Cover Gasket', 'Wheel Bearings'],
@@ -232,15 +232,9 @@ def build(input_path, output_path, region_district_path=None):
                 # oil-inclusive accumulators
                 l1_tx_all=defaultdict(int), l2_tx_all=defaultdict(int),
             )
-        # Normalize legacy category names → current names
-        CATEGORY_RENAMES = {
-            'Engine': 'Engine Maintenance',
-            'Emissions & Inspections': 'Emissions & Inspections*',
-        }
         if r.get('OFFERS_SERVICE') == '1':
             is_oil = str(r.get('IS_OIL_TRANSACTION','0')).strip() == '1'
-            cat = CATEGORY_RENAMES.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
-            sub = r.get('L2_SUBCATEGORY','')
+            cat = r['L1_CATEGORY']; sub = r.get('L2_SUBCATEGORY','')
             try: tx = int(r['TRANSACTION_COUNT'])
             except: tx = 0
             store_map[sn]['l1_tx_all'][cat] += tx
@@ -264,14 +258,12 @@ def build(input_path, output_path, region_district_path=None):
     dma_stores   = defaultdict(set); dma_l1   = defaultdict(lambda: defaultdict(set))
 
     for r in rows:
-        _cat_norm = {'Engine':'Engine Maintenance','Emissions & Inspections':'Emissions & Inspections*'}
         if r.get('OFFERS_SERVICE') == '1' and str(r.get('IS_OIL_TRANSACTION','0')).strip() != '1':
-            _l1 = _cat_norm.get(r['L1_CATEGORY'], r['L1_CATEGORY'])
-            l1_stats[_l1]['stores'].add(r['STORE_NUMBER'])
-            l1_stats[_l1]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+            l1_stats[r['L1_CATEGORY']]['stores'].add(r['STORE_NUMBER'])
+            l1_stats[r['L1_CATEGORY']]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
             if r.get('L2_SUBCATEGORY'):
-                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
-                l2_stats[(_l1,r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
+                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['stores'].add(r['STORE_NUMBER'])
+                l2_stats[(r['L1_CATEGORY'],r['L2_SUBCATEGORY'])]['tx'] += int(r.get('TRANSACTION_COUNT',0) or 0)
 
     for s in stores:
         brand_stores[s['BRAND']].add(s['STORE_NUMBER'])
@@ -410,7 +402,7 @@ def build(input_path, output_path, region_district_path=None):
     # ══════════════════════════════════════════════════════════════════════════
     build_binary_l1(
         'L1 Category Mix Binary',
-        f'FullSpeed Automotive — Service Category Mix (Yes/No)  |  Yes = ≥1 transaction recorded  |  {date_window}  |  *Excl. oil change  |  Emissions* = state inspection programs only (CO/WA/GA/TX/NC/UT)',
+        f'FullSpeed Automotive — Service Category Mix (Yes/No)  |  Yes = ≥1 transaction recorded  |  {date_window}  *Excluding Oil Change Transactions*',
         NON_OIL_CATS,
         lambda s, cat: s['l1_tx'].get(cat, 0)
     )
@@ -771,7 +763,7 @@ def build(input_path, output_path, region_district_path=None):
              ('DMA_NAME',26),('REGION_NUM',8),('DISTRICT_NUM',9),
              ('STORE_MODEL',10),('PROPOSED_MODEL',13),
              ('L1_CATEGORY',22),('L2_SUBCATEGORY',24),
-             ('SERVICE_NAME',34),('TRANSACTION_COUNT',14),('IS_OIL_TRANSACTION',14),('IS_INSPECTION_STATE',16)]
+             ('SERVICE_NAME',34),('TRANSACTION_COUNT',14),('IS_OIL_TRANSACTION',14)]
     for col, (hdr, w) in enumerate(RCOLS, 1):
         set_id_hdr(ws, 2, col, hdr, w)
     ws.row_dimensions[2].height = 18

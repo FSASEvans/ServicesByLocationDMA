@@ -156,7 +156,10 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .sb-name{font-size:12px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sb-detail{font-size:10px;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sb-tx{font-size:12px;font-weight:700;color:var(--text-2);flex-shrink:0;}
-.sb-foot{padding:11px 22px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;font-size:11px;color:var(--text-m);display:flex;justify-content:space-between;}
+.sb-foot{padding:11px 22px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;font-size:11px;color:var(--text-m);display:flex;justify-content:space-between;align-items:center;}
+.sb-export{display:flex;align-items:center;gap:5px;background:var(--red);color:#fff;border:none;border-radius:var(--r-sm);padding:5px 12px;font-family:var(--font-b);font-size:11px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.sb-export:hover{opacity:.85;}
+.sb-export svg{flex-shrink:0;}
 
 /* MAP */
 .map-ctrl-row{padding:12px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);}
@@ -478,7 +481,12 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
   </div>
   <div class="sb-search"><input type="text" id="sbSearch" placeholder="Search stores, cities, DMAs..." oninput="filterSB()"></div>
   <div class="sb-list" id="sbList"></div>
-  <div class="sb-foot" id="sbFoot"></div>
+  <div class="sb-foot">
+    <span id="sbFoot"></span>
+    <button class="sb-export" onclick="exportSidebarCSV()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 5l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Export CSV
+    </button>
+  </div>
 </div>
 
 <!-- HEADER -->
@@ -607,6 +615,24 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
         <div class="ms-foot">
           <button class="ms-btn-all" onclick="selectAll('district')">All</button>
           <button class="ms-btn-clr" onclick="clearFilter('district')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f-sep"></div>
+  <div class="f-grp">
+    <span class="f-lbl">Service</span>
+    <div class="ms-wrap" id="wrap-service">
+      <div class="ms-trig" id="trig-service" onclick="toggleDropdown('service')" style="min-width:150px">
+        <span class="ms-txt" id="txt-service">All Services</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-service">
+        <div class="ms-dd-search"><input type="text" placeholder="Search services..." oninput="searchDD(this,'service')"></div>
+        <div class="ms-list" id="list-service"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('service')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('service')">Clear</button>
         </div>
       </div>
     </div>
@@ -840,7 +866,7 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
           <tr><td><strong>Wiper Blades</strong></td><td><span class="code-pill">BB PREMIUM WIPER</span> <span class="code-pill">CB WIPER</span> <span class="code-pill">\d+-[12] REAR WIPER</span></td><td>BB/CB = blade size codes (26BB, 24CB). Rear wipers use numeric size format.</td></tr>
           <tr><td><strong>Emissions</strong></td><td><span class="code-pill">GEORGIA EMISSIONS</span> <span class="code-pill">NC STATE EMIS</span> <span class="code-pill">EMISSION CERT</span></td><td><span class="warn-pill">⚠ Note</span> 85% of this category's volume is state inspection programs (GA, TX, NC, UT) — not organic demand.</td></tr>
           <tr><td><strong>Transmission</strong></td><td><span class="code-pill">CVT</span> <span class="code-pill">DMX GLOBAL SYN ATF</span> <span class="code-pill">TRANSMISSION FLUID</span></td><td>DMX GLOBAL SYN ATF is a specific ATF brand appearing across many stores.</td></tr>
-          <tr><td><strong>Engine Maintenance</strong></td><td><span class="code-pill">SPARK PLUG</span> <span class="code-pill">IGNITION COIL</span> <span class="code-pill">VALVE COVER</span> <span class="code-pill">SERPENTINE</span></td><td>Lower-case patterns catch free-text entries: <span class="code-pill">plugs</span> <span class="code-pill">tune up</span> <span class="code-pill">belt</span>.</td></tr>
+          <tr><td><strong>Engine</strong></td><td><span class="code-pill">SPARK PLUG</span> <span class="code-pill">IGNITION COIL</span> <span class="code-pill">VALVE COVER</span> <span class="code-pill">SERPENTINE</span></td><td>Lower-case patterns catch free-text entries: <span class="code-pill">plugs</span> <span class="code-pill">tune up</span> <span class="code-pill">belt</span>.</td></tr>
         </tbody>
       </table>
     </div>
@@ -883,8 +909,8 @@ const RAW = __DASHBOARD_DATA__;
 // ═══════════════════════════════════════════════════════════
 const CAT_COLORS = {
   'Air Conditioning':'#0EA5E9','Air Filters':'#16A34A','Battery':'#D97706',
-  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections*':'#4F46E5',
-  'Engine Maintenance':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
+  'Brakes':'#DC2626','Differentials':'#7C3AED','Emissions & Inspections':'#4F46E5',
+  'Engine':'#2563EB','Fluids & Cooling':'#0891B2','Fuel System':'#B45309',
   'Lighting':'#CA8A04','Shop & Misc':'#6B7280','Suspension & Steering':'#059669',
   'Tires':'#65A30D','Transmission':'#9333EA','Wiper Blades':'#475569',
 };
@@ -900,9 +926,9 @@ const DMA_PAL = ['#C8102E','#1D4ED8','#059669','#D97706','#7C3AED','#0891B2',
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
-const KEYS = ['brand','state','dma','city','region','district'];
-const FIELD = {brand:'brand',state:'state',dma:'dma_name',city:'city',region:'region_num',district:'district_num'};
-const sel = {brand:new Set(),state:new Set(),dma:new Set(),city:new Set(),region:new Set(),district:new Set()};
+const KEYS = ['brand','state','dma','city','region','district','service'];
+const FIELD = {brand:'brand',state:'state',dma:'dma_name',city:'city',region:'region_num',district:'district_num',service:null};
+const sel = {brand:new Set(),state:new Set(),dma:new Set(),city:new Set(),region:new Set(),district:new Set(),service:new Set()};
 let filtered = RAW.stores;
 let oilView = 'all';  // 'all' | 'no' | 'inc'
 let mapMode = 'brand', activeSvc = null;
@@ -931,7 +957,13 @@ function getPreFiltered(excl) {
   return RAW.stores.filter(s => {
     for (const k of KEYS) {
       if (k === excl) continue;
-      if (sel[k].size > 0 && !sel[k].has(s[FIELD[k]])) return false;
+      if (sel[k].size === 0) continue;
+      if (k === 'service') {
+        const cats = getCategories(s) || {};
+        if (![...sel.service].some(svc => cats[svc] > 0)) return false;
+      } else {
+        if (!sel[k].has(s[FIELD[k]])) return false;
+      }
     }
     return true;
   });
@@ -946,6 +978,7 @@ function buildDropdown(key) {
     : key === 'state'    ? RAW.states
     : key === 'dma'      ? RAW.dmas
     : key === 'region'   ? RAW.regions
+    : key === 'service'  ? RAW.l1_categories
     : RAW.brands;
   list.innerHTML = items.map(v =>
     `<label class="ms-item${sel[key].has(v)?' sel':''}">` +
@@ -988,7 +1021,7 @@ function updateTrigLabel(key) {
   const txt  = document.getElementById('txt-' + key);
   const trig = document.getElementById('trig-' + key);
   const n = sel[key].size;
-  const defaults = {brand:'All Brands',state:'All States',dma:'All DMAs',city:'All Cities',region:'All Regions',district:'All Districts'};
+  const defaults = {brand:'All Brands',state:'All States',dma:'All DMAs',city:'All Cities',region:'All Regions',district:'All Districts',service:'All Services'};
   txt.textContent = n === 0 ? defaults[key] : n === 1 ? [...sel[key]][0] : `${n} selected`;
   let badge = trig.querySelector('.ms-cnt');
   if (n === 0) { if (badge) badge.remove(); }
@@ -1002,7 +1035,7 @@ function selectAll(key) {
   const items = key === 'city' ? getPreFiltered('city').map(s=>s.city)
     : key === 'district' ? [...new Set(getPreFiltered('district').map(s=>s.district_num).filter(Boolean))]
     : key === 'state' ? RAW.states : key === 'dma' ? RAW.dmas
-    : key === 'region' ? RAW.regions : RAW.brands;
+    : key === 'region' ? RAW.regions : key === 'service' ? RAW.l1_categories : RAW.brands;
   items.forEach(v => sel[key].add(v));
   buildDropdown(key); updateTrigLabel(key); applyFilters();
 }
@@ -1046,7 +1079,15 @@ document.addEventListener('click', e => {
 function applyFilters() {
   filtered = RAW.stores.filter(s => {
     for (const k of KEYS) {
-      if (sel[k].size > 0 && !sel[k].has(s[FIELD[k]])) return false;
+      if (sel[k].size === 0) continue;
+      if (k === 'service') {
+        // Store must offer at least one of the selected services
+        const cats = getCategories(s) || {};
+        const hasOne = [...sel.service].some(svc => cats[svc] > 0);
+        if (!hasOne) return false;
+      } else {
+        if (!sel[k].has(s[FIELD[k]])) return false;
+      }
     }
     return true;
   });
@@ -1156,6 +1197,45 @@ function filterSB() {
     s.store_name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) ||
     s.dma_name.toLowerCase().includes(q)   || s.state.toLowerCase().includes(q)
   ));
+}
+
+function exportSidebarCSV() {
+  if (!sbStores || !sbStores.length) return;
+  const activeFilters = KEYS.filter(k => sel[k].size > 0)
+    .map(k => k + '=' + [...sel[k]].join('|')).join('; ');
+  const oilLabel = oilView === 'no' ? 'Non-oil only' : oilView === 'inc' ? 'Oil-inclusive' : 'All visits';
+  const rows = [
+    ['# FSA Store Service Intelligence — Export'],
+    ['# Service Category: ' + sbCat],
+    ['# Oil View: ' + oilLabel],
+    ['# Active Filters: ' + (activeFilters || 'None')],
+    ['# Exported: ' + new Date().toLocaleString()],
+    ['# Stores: ' + sbStores.length],
+    [],
+    ['Store Number','Store Name','Brand','City','State','DMA','Region','District','District Mgr','Region VP','Transaction Count']
+  ];
+  sbStores.forEach(s => {
+    const tx = (getCategories(s) && getCategories(s)[sbCat]) || 0;
+    rows.push([
+      s.store_number, s.store_name, s.brand,
+      s.city, s.state, s.dma_name,
+      s.region_num || '', s.district_num || '',
+      s.district_mgr || '', s.region_vp || '',
+      tx
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => {
+    const str = String(v ?? '');
+    return str.includes(',') || str.includes('"') || str.includes('\n')
+      ? '"' + str.replace(/"/g, '""') + '"' : str;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const safeCat = sbCat.replace(/[^a-zA-Z0-9_-]/g,'_');
+  a.href = url; a.download = 'FSA_' + safeCat + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function closeSidebar() {
@@ -1423,7 +1503,7 @@ function buildDMATable() {
   const wrap = document.getElementById('dmaTableWrap');
   const dmas=[...new Set(filtered.map(s=>s.dma_name).filter(d=>d&&d!=='Unknown'))].sort();
   if (!dmas.length) { wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-m)">No stores match filters</div>'; return; }
-  const SHORT={'Emissions & Inspections*':'Emissions','Suspension & Steering':'Suspension','Fluids & Cooling':'Fluids','Shop & Misc':'Shop/Misc'};
+  const SHORT={'Emissions & Inspections':'Emissions','Suspension & Steering':'Suspension','Fluids & Cooling':'Fluids','Shop & Misc':'Shop/Misc'};
   let html=`<table class="rt" id="rtDMA"><thead><tr class="chr">` +
     `<th class="rh corner" style="min-width:200px">DMA Market</th>` +
     `<th>Stores</th>`;
