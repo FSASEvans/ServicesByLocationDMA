@@ -80,8 +80,10 @@ def build_data_payload(csv_path):
                 "region_vp":    r.get("REGION_VP", ""),
                 "district_num": r.get("DISTRICT_NUM", ""),
                 "district_mgr": r.get("DISTRICT_MGR", ""),
-                "categories":     {},   # non-oil transactions only
-                "categories_all": {},   # oil-inclusive
+                "categories":     {},   # non-oil transactions only (L1)
+                "categories_all": {},   # oil-inclusive (L1)
+                "categories_l2":  {},   # non-oil (L1 → {L2: tx})
+                "categories_l2_all": {}, # oil-inclusive (L1 → {L2: tx})
             }
 
         CATEGORY_RENAMES = {"Engine":"Engine Maintenance","Emissions & Inspections":"Emissions & Inspections*"}
@@ -92,9 +94,18 @@ def build_data_payload(csv_path):
             except (ValueError, KeyError):
                 tx = 0
             is_oil = str(r.get("IS_OIL_TRANSACTION", "0")).strip() == "1"
+            l2 = r.get("L2_SUBCATEGORY", "") or ""
             stores[sn]["categories_all"][l1] = stores[sn]["categories_all"].get(l1, 0) + tx
+            if l2:
+                if l1 not in stores[sn]["categories_l2_all"]:
+                    stores[sn]["categories_l2_all"][l1] = {}
+                stores[sn]["categories_l2_all"][l1][l2] = stores[sn]["categories_l2_all"][l1].get(l2, 0) + tx
             if not is_oil:
                 stores[sn]["categories"][l1] = stores[sn]["categories"].get(l1, 0) + tx
+                if l2:
+                    if l1 not in stores[sn]["categories_l2"]:
+                        stores[sn]["categories_l2"][l1] = {}
+                    stores[sn]["categories_l2"][l1][l2] = stores[sn]["categories_l2"][l1].get(l2, 0) + tx
 
     stores_list = sorted(stores.values(), key=lambda s: (
         int(s["store_number"]) if s["store_number"].isdigit() else 0
@@ -122,6 +133,15 @@ def build_data_payload(csv_path):
           f"{len(all_brands)} brands · {len(all_dmas)} DMAs · "
           f"{len(all_regions)} regions · {len(all_districts)} districts")
 
+    # L2 hierarchy map: {L1: [L2, ...]} — derived from data observed
+    l2_hierarchy = {}
+    for s in stores_list:
+        for l1, l2_dict in s["categories_l2"].items():
+            if l1 not in l2_hierarchy:
+                l2_hierarchy[l1] = set()
+            l2_hierarchy[l1].update(l2_dict.keys())
+    l2_hierarchy = {k: sorted(v) for k, v in sorted(l2_hierarchy.items())}
+
     return {
         "stores":         stores_list,
         "l1_categories":  all_l1,
@@ -130,6 +150,7 @@ def build_data_payload(csv_path):
         "dmas":           all_dmas,
         "regions":        all_regions,
         "districts":      all_districts,
+        "l2_hierarchy":   l2_hierarchy,
     }
 
 

@@ -622,17 +622,33 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 
   <div class="f-sep"></div>
   <div class="f-grp">
-    <span class="f-lbl">Service</span>
-    <div class="ms-wrap" id="wrap-service">
-      <div class="ms-trig" id="trig-service" onclick="toggleDropdown('service')" style="min-width:150px">
-        <span class="ms-txt" id="txt-service">All Services</span><span class="ms-caret"></span>
+    <span class="f-lbl">L1 Category</span>
+    <div class="ms-wrap" id="wrap-svc_l1">
+      <div class="ms-trig" id="trig-svc_l1" onclick="toggleDropdown('svc_l1')" style="min-width:160px">
+        <span class="ms-txt" id="txt-svc_l1">All Categories</span><span class="ms-caret"></span>
       </div>
-      <div class="ms-dd" id="dd-service">
-        <div class="ms-dd-search"><input type="text" placeholder="Search services..." oninput="searchDD(this,'service')"></div>
-        <div class="ms-list" id="list-service"></div>
+      <div class="ms-dd" id="dd-svc_l1">
+        <div class="ms-dd-search"><input type="text" placeholder="Search categories..." oninput="searchDD(this,'svc_l1')"></div>
+        <div class="ms-list" id="list-svc_l1"></div>
         <div class="ms-foot">
-          <button class="ms-btn-all" onclick="selectAll('service')">All</button>
-          <button class="ms-btn-clr" onclick="clearFilter('service')">Clear</button>
+          <button class="ms-btn-all" onclick="selectAll('svc_l1')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('svc_l1')">Clear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="f-grp">
+    <span class="f-lbl">L2 Subcategory</span>
+    <div class="ms-wrap" id="wrap-svc_l2">
+      <div class="ms-trig" id="trig-svc_l2" onclick="toggleDropdown('svc_l2')" style="min-width:180px">
+        <span class="ms-txt" id="txt-svc_l2">All Subcategories</span><span class="ms-caret"></span>
+      </div>
+      <div class="ms-dd" id="dd-svc_l2">
+        <div class="ms-dd-search"><input type="text" placeholder="Search subcategories..." oninput="searchDD(this,'svc_l2')"></div>
+        <div class="ms-list" id="list-svc_l2"></div>
+        <div class="ms-foot">
+          <button class="ms-btn-all" onclick="selectAll('svc_l2')">All</button>
+          <button class="ms-btn-clr" onclick="clearFilter('svc_l2')">Clear</button>
         </div>
       </div>
     </div>
@@ -926,9 +942,9 @@ const DMA_PAL = ['#C8102E','#1D4ED8','#059669','#D97706','#7C3AED','#0891B2',
 // ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
-const KEYS = ['brand','state','dma','city','region','district','service'];
-const FIELD = {brand:'brand',state:'state',dma:'dma_name',city:'city',region:'region_num',district:'district_num',service:null};
-const sel = {brand:new Set(),state:new Set(),dma:new Set(),city:new Set(),region:new Set(),district:new Set(),service:new Set()};
+const KEYS = ['brand','state','dma','city','region','district','svc_l1','svc_l2'];
+const FIELD = {brand:'brand',state:'state',dma:'dma_name',city:'city',region:'region_num',district:'district_num',svc_l1:null,svc_l2:null};
+const sel = {brand:new Set(),state:new Set(),dma:new Set(),city:new Set(),region:new Set(),district:new Set(),svc_l1:new Set(),svc_l2:new Set()};
 let filtered = RAW.stores;
 let oilView = 'all';  // 'all' | 'no' | 'inc'
 let mapMode = 'brand', activeSvc = null;
@@ -958,9 +974,12 @@ function getPreFiltered(excl) {
     for (const k of KEYS) {
       if (k === excl) continue;
       if (sel[k].size === 0) continue;
-      if (k === 'service') {
+      if (k === 'svc_l1') {
         const cats = getCategories(s) || {};
-        if (![...sel.service].some(svc => cats[svc] > 0)) return false;
+        if (![...sel.svc_l1].some(l1 => cats[l1] > 0)) return false;
+      } else if (k === 'svc_l2') {
+        const cl2 = getCategoriesL2(s) || {};
+        if (![...sel.svc_l2].some(l2 => Object.values(cl2).some(sub => sub[l2] > 0))) return false;
       } else {
         if (!sel[k].has(s[FIELD[k]])) return false;
       }
@@ -978,7 +997,8 @@ function buildDropdown(key) {
     : key === 'state'    ? RAW.states
     : key === 'dma'      ? RAW.dmas
     : key === 'region'   ? RAW.regions
-    : key === 'service'  ? RAW.l1_categories
+    : key === 'svc_l1'   ? RAW.l1_categories
+    : key === 'svc_l2'   ? getAvailL2()
     : RAW.brands;
   list.innerHTML = items.map(v =>
     `<label class="ms-item${sel[key].has(v)?' sel':''}">` +
@@ -1014,6 +1034,7 @@ function toggleItem(key, val, cb) {
   if (cb.checked) sel[key].add(val); else sel[key].delete(val);
   cb.closest('.ms-item').classList.toggle('sel', cb.checked);
   updateTrigLabel(key);
+  if (key === 'svc_l1') onSvcL1Change();
   applyFilters();
 }
 
@@ -1021,7 +1042,7 @@ function updateTrigLabel(key) {
   const txt  = document.getElementById('txt-' + key);
   const trig = document.getElementById('trig-' + key);
   const n = sel[key].size;
-  const defaults = {brand:'All Brands',state:'All States',dma:'All DMAs',city:'All Cities',region:'All Regions',district:'All Districts',service:'All Services'};
+  const defaults = {brand:'All Brands',state:'All States',dma:'All DMAs',city:'All Cities',region:'All Regions',district:'All Districts',svc_l1:'All Categories',svc_l2:'All Subcategories'};
   txt.textContent = n === 0 ? defaults[key] : n === 1 ? [...sel[key]][0] : `${n} selected`;
   let badge = trig.querySelector('.ms-cnt');
   if (n === 0) { if (badge) badge.remove(); }
@@ -1035,13 +1056,16 @@ function selectAll(key) {
   const items = key === 'city' ? getPreFiltered('city').map(s=>s.city)
     : key === 'district' ? [...new Set(getPreFiltered('district').map(s=>s.district_num).filter(Boolean))]
     : key === 'state' ? RAW.states : key === 'dma' ? RAW.dmas
-    : key === 'region' ? RAW.regions : key === 'service' ? RAW.l1_categories : RAW.brands;
+    : key === 'region' ? RAW.regions : key === 'svc_l1' ? RAW.l1_categories
+    : key === 'svc_l2' ? getAvailL2() : RAW.brands;
   items.forEach(v => sel[key].add(v));
   buildDropdown(key); updateTrigLabel(key); applyFilters();
 }
 
 function clearFilter(key) {
-  sel[key].clear(); buildDropdown(key); updateTrigLabel(key); applyFilters();
+  sel[key].clear();
+  if (key === 'svc_l1') { sel.svc_l2.clear(); updateTrigLabel('svc_l2'); }
+  buildDropdown(key); updateTrigLabel(key); applyFilters();
 }
 
 function setOilView(v) {
@@ -1055,6 +1079,34 @@ function setOilView(v) {
 function getCategories(s) {
   if (oilView === 'inc') return s.categories_all || s.categories;
   return s.categories;
+}
+
+function getCategoriesL2(s) {
+  if (oilView === 'inc') return s.categories_l2_all || s.categories_l2 || {};
+  return s.categories_l2 || {};
+}
+
+function getAvailL2() {
+  const h = RAW.l2_hierarchy || {};
+  if (sel.svc_l1.size === 0) {
+    // No L1 filter active — return all L2s across all categories, sorted
+    return [...new Set(Object.values(h).flat())].sort();
+  }
+  // Return only L2s belonging to the selected L1 categories
+  const l2s = [];
+  sel.svc_l1.forEach(l1 => { if (h[l1]) l2s.push(...h[l1]); });
+  return [...new Set(l2s)].sort();
+}
+
+function onSvcL1Change() {
+  // Remove any selected L2s that don't exist under the new L1 selection
+  const avail = new Set(getAvailL2());
+  [...sel.svc_l2].forEach(l2 => { if (!avail.has(l2)) sel.svc_l2.delete(l2); });
+  updateTrigLabel('svc_l2');
+  // Rebuild L2 dropdown if it's open
+  if (document.getElementById('dd-svc_l2').classList.contains('open')) {
+    buildDropdown('svc_l2');
+  }
 }
 
 function resetAll() {
@@ -1080,11 +1132,12 @@ function applyFilters() {
   filtered = RAW.stores.filter(s => {
     for (const k of KEYS) {
       if (sel[k].size === 0) continue;
-      if (k === 'service') {
-        // Store must offer at least one of the selected services
+      if (k === 'svc_l1') {
         const cats = getCategories(s) || {};
-        const hasOne = [...sel.service].some(svc => cats[svc] > 0);
-        if (!hasOne) return false;
+        if (![...sel.svc_l1].some(l1 => cats[l1] > 0)) return false;
+      } else if (k === 'svc_l2') {
+        const cl2 = getCategoriesL2(s) || {};
+        if (![...sel.svc_l2].some(l2 => Object.values(cl2).some(sub => sub[l2] > 0))) return false;
       } else {
         if (!sel[k].has(s[FIELD[k]])) return false;
       }
@@ -1202,7 +1255,10 @@ function filterSB() {
 function exportSidebarCSV() {
   if (!sbStores || !sbStores.length) return;
   const activeFilters = KEYS.filter(k => sel[k].size > 0)
-    .map(k => k + '=' + [...sel[k]].join('|')).join('; ');
+    .map(k => {
+      const lbl = k==='svc_l1'?'L1 Category':k==='svc_l2'?'L2 Subcategory':k;
+      return lbl + '=' + [...sel[k]].join('|');
+    }).join('; ');
   const oilLabel = oilView === 'no' ? 'Non-oil only' : oilView === 'inc' ? 'Oil-inclusive' : 'All visits';
   const rows = [
     ['# FSA Store Service Intelligence — Export'],
