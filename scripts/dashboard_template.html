@@ -75,6 +75,9 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
 .f-sep{width:1px;height:30px;background:var(--border);align-self:center;}
 .btn-reset{margin-left:auto;background:transparent;border:1px solid var(--border-mid);color:var(--text-m);font-family:var(--font-b);font-size:12px;font-weight:500;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px;}
 .btn-reset:hover{border-color:var(--red);color:var(--red);background:var(--red-pale);}
+.btn-export{background:var(--red);color:#fff;border:1px solid var(--red);font-family:var(--font-b);font-size:12px;font-weight:600;padding:6px 13px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;gap:5px;transition:opacity .15s;white-space:nowrap;}
+.btn-export:hover{opacity:.85;}
+.btn-export svg{flex-shrink:0;}
 .oil-btn{font-family:var(--font-b);font-size:12px;font-weight:500;padding:5px 11px;border-radius:var(--r-sm);border:1px solid var(--border-mid);background:var(--white);color:var(--text-m);cursor:pointer;transition:all .15s;}
 .oil-btn:hover{border-color:var(--text-m);}
 .oil-btn.oil-active{background:var(--red);border-color:var(--red);color:#fff;}
@@ -342,6 +345,7 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
   .f-sep { display:none; }
   .ms-trig { min-width:110px !important; font-size:11px; padding:5px 22px 5px 8px; }
   .btn-reset { margin-left:0; }
+  .btn-export { margin-left:auto; }
   .f-eye { padding-right:8px; }
 
   /* Tab nav — horizontal scroll */
@@ -662,6 +666,10 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-heig
     <button id="oil-btn-inc" class="oil-btn"            onclick="setOilView('inc')">Incl. oil</button>
   </div>
 
+  <button class="btn-export" onclick="exportFilteredCSV()" id="btnExport">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 5l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Export CSV
+  </button>
   <button class="btn-reset" onclick="resetAll()">
     <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     Reset All
@@ -1250,6 +1258,77 @@ function filterSB() {
     s.store_name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) ||
     s.dma_name.toLowerCase().includes(q)   || s.state.toLowerCase().includes(q)
   ));
+}
+
+function exportFilteredCSV() {
+  if (!filtered || !filtered.length) return;
+
+  // Collect all service categories present across filtered stores
+  const l1Cats = RAW.l1_categories.filter(c => c !== 'Oil Change');
+
+  // Build active filter description for metadata header
+  const oilLabel = oilView==='no'?'Non-oil only':oilView==='inc'?'Oil-inclusive':'All visits';
+  const activeFilters = KEYS.filter(k => sel[k].size > 0).map(k => {
+    const lbl = k==='svc_l1'?'L1 Category':k==='svc_l2'?'L2 Subcategory':k;
+    return lbl + '=' + [...sel[k]].join('|');
+  }).join('; ');
+
+  // CSV rows — metadata header block
+  const rows = [
+    ['# FSA Store Service Intelligence — Filtered Export'],
+    ['# Stores in export: ' + filtered.length],
+    ['# Oil view: ' + oilLabel],
+    ['# Active filters: ' + (activeFilters || 'None')],
+    ['# Exported: ' + new Date().toLocaleString()],
+    [],
+    // Column headers — ID fields then one column per L1 category
+    ['Store Number','Store Name','Brand','City','State','DMA',
+     'Region','District','District Mgr','Region VP',
+     ...l1Cats]
+  ];
+
+  // One row per filtered store
+  const storesSorted = [...filtered].sort((a,b) => {
+    const ra = parseInt(a.region_num)||999, rb = parseInt(b.region_num)||999;
+    if (ra !== rb) return ra - rb;
+    const da = parseInt(a.district_num)||999, db = parseInt(b.district_num)||999;
+    if (da !== db) return da - db;
+    return a.store_name.localeCompare(b.store_name);
+  });
+
+  storesSorted.forEach(s => {
+    const cats = getCategories(s) || {};
+    rows.push([
+      s.store_number, s.store_name, s.brand,
+      s.city, s.state, s.dma_name,
+      s.region_num || '', s.district_num || '',
+      s.district_mgr || '', s.region_vp || '',
+      // Yes/No for each L1 category
+      ...l1Cats.map(cat => (cats[cat] > 0) ? 'Yes' : 'No')
+    ]);
+  });
+
+  // Encode CSV
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\n');
+
+  // Build filename from active filters
+  const brandPart  = sel.brand.size === 1  ? [...sel.brand][0].replace(/\s+/g,'_') : 'All_Brands';
+  const l1Part     = sel.svc_l1.size === 1 ? [...sel.svc_l1][0].replace(/[^a-zA-Z0-9]/g,'_') : '';
+  const l2Part     = sel.svc_l2.size === 1 ? [...sel.svc_l2][0].replace(/[^a-zA-Z0-9]/g,'_') : '';
+  const svcPart    = [l1Part, l2Part].filter(Boolean).join('_');
+  const datePart   = new Date().toISOString().slice(0,10);
+  const filename   = ['FSA', brandPart, svcPart, datePart].filter(Boolean).join('_') + '.csv';
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function exportSidebarCSV() {
